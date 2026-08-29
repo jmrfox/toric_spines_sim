@@ -1,0 +1,1 @@
+Run simulations from root directory as modules using `uv run -m <script>`.

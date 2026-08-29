@@ -1,0 +1,409 @@
+"""Tests for toric_spines_sim.model module."""
+
+import pytest
+import numpy as np
+from pathlib import Path
+from jscip import IndependentScalarParameter, ParameterBank
+from toric_spines_sim.geometry.swc import (
+    parse_cycle_breaks,
+    read_swc_points,
+    get_center_coordinates_for_all_segments,
+)
+from toric_spines_sim.utils import equal_vectors
+from toric_spines_sim.simulation.parameters import make_default_parameter_bank
+from toric_spines_sim import (
+    SynapsePoint,
+    SynapsePopulation,
+    GapJunctionPoint,
+    prepare_ampa_synapses,
+    prepare_gap_junctions,
+)
+
+
+class TestParseCycleBreaks:
+    """Test suite for parse_cycle_breaks function."""
+
+    def test_parse_basic(self, sample_swc_file):
+        """Test parsing basic cycle break annotation."""
+        pairs = parse_cycle_breaks(sample_swc_file)
+        assert len(pairs) == 1
+        assert pairs[0] == (3, 4)
+
+    def test_parse_no_cycle_breaks(self, temp_dir):
+        """Test parsing SWC with no cycle breaks."""
+        swc_content = """# No cycle breaks here
+1 1 0.0 0.0 0.0 1.0 -1
+2 1 1.0 0.0 0.0 0.8 1
+"""
+        swc_path = temp_dir / "no_breaks.swc"
+        swc_path.write_text(swc_content)
+        pairs = parse_cycle_breaks(swc_path)
+        assert pairs == []
+
+    def test_parse_multiple_breaks(self, temp_dir):
+        """Test parsing multiple cycle breaks."""
+        swc_content = """# CYCLE_BREAK reconnect 3 4
+# CYCLE_BREAK reconnect 5 6
+1 1 0.0 0.0 0.0 1.0 -1
+"""
+        swc_path = temp_dir / "multi_breaks.swc"
+        swc_path.write_text(swc_content)
+        pairs = parse_cycle_breaks(swc_path)
+        assert len(pairs) == 2
+        assert (3, 4) in pairs
+        assert (5, 6) in pairs
+
+    def test_parse_case_insensitive(self, temp_dir):
+        """Test that parsing is case insensitive."""
+        swc_content = """# cycle_break reconnect 3 4
+# CYCLE_BREAK RECONNECT 5 6
+1 1 0.0 0.0 0.0 1.0 -1
+"""
+        swc_path = temp_dir / "case_test.swc"
+        swc_path.write_text(swc_content)
+        pairs = parse_cycle_breaks(swc_path)
+        assert len(pairs) == 2
+
+    def test_parse_invalid_format(self, temp_dir):
+        """Test error on invalid cycle break format."""
+        swc_content = """# CYCLE_BREAK reconnect invalid data
+1 1 0.0 0.0 0.0 1.0 -1
+"""
+        swc_path = temp_dir / "invalid.swc"
+        swc_path.write_text(swc_content)
+        with pytest.raises(ValueError):
+            parse_cycle_breaks(swc_path)
+
+
+class TestReadSwcPoints:
+    """Test suite for read_swc_points function."""
+
+    def test_read_basic(self, sample_swc_file):
+        """Test reading basic SWC file."""
+        points = read_swc_points(sample_swc_file)
+        assert len(points) == 5
+        assert 1 in points
+        assert points[1] == (0.0, 0.0, 0.0, 1.0)
+
+    def test_read_coordinates(self, sample_swc_file):
+        """Test that coordinates are read correctly."""
+        points = read_swc_points(sample_swc_file)
+        assert points[2] == (1.0, 0.0, 0.0, 0.8)
+        assert points[3] == (2.0, 0.0, 0.0, 0.6)
+
+    def test_read_ignores_comments(self, temp_dir):
+        """Test that comments are ignored."""
+        swc_content = """# This is a comment
+# Another comment
+1 1 0.0 0.0 0.0 1.0 -1
+# More comments
+2 1 1.0 0.0 0.0 0.8 1
+"""
+        swc_path = temp_dir / "comments.swc"
+        swc_path.write_text(swc_content)
+        points = read_swc_points(swc_path)
+        assert len(points) == 2
+
+    def test_read_invalid_line(self, temp_dir):
+        """Test error on invalid SWC line."""
+        swc_content = """1 1 0.0 0.0 0.0 1.0 -1
+invalid line
+"""
+        swc_path = temp_dir / "invalid.swc"
+        swc_path.write_text(swc_content)
+        with pytest.raises(ValueError):
+            read_swc_points(swc_path)
+
+
+class TestCenterCoordinatesForAllSegments:
+    """Test suite for center_coordinates_for_all_segments function."""
+
+    def test_basic_functionality(self, sample_swc_file):
+        """Test basic coordinate generation."""
+        coords = get_center_coordinates_for_all_segments(sample_swc_file)
+        assert isinstance(coords, dict)
+        assert len(coords) > 0
+        assert all(isinstance(k, str) for k in coords.keys())
+        assert all(len(v) == 3 for v in coords.values())
+
+    def test_probe_naming(self, sample_swc_file):
+        """Test that probes are named correctly."""
+        coords = get_center_coordinates_for_all_segments(sample_swc_file)
+        assert "probe_seg_0" in coords
+
+    def test_with_radius_weighting(self, sample_swc_file):
+        """Test with radius weighting enabled."""
+        coords = get_center_coordinates_for_all_segments(
+            sample_swc_file, use_radius_weighting=True
+        )
+        assert len(coords) > 0
+
+
+class TestEqualVectors:
+    """Test suite for equal_vectors function."""
+
+    def test_equal_vectors(self):
+        """Test that equal vectors are detected."""
+        v1 = [1.0, 2.0, 3.0]
+        v2 = [1.0, 2.0, 3.0]
+        assert equal_vectors(v1, v2)
+
+    def test_unequal_vectors(self):
+        """Test that unequal vectors are detected."""
+        v1 = [1.0, 2.0, 3.0]
+        v2 = [1.0, 2.0, 4.0]
+        assert not equal_vectors(v1, v2)
+
+    def test_within_tolerance(self):
+        """Test vectors within tolerance."""
+        v1 = [1.0, 2.0, 3.0]
+        v2 = [1.0000001, 2.0, 3.0]
+        assert equal_vectors(v1, v2, tol=1e-5)
+
+    def test_numpy_arrays(self):
+        """Test with numpy arrays."""
+        v1 = np.array([1.0, 2.0, 3.0])
+        v2 = np.array([1.0, 2.0, 3.0])
+        assert equal_vectors(v1, v2)
+
+
+class TestMakeDefaultParameterBank:
+    """Test suite for make_default_parameter_bank function."""
+
+    def test_creates_parameter_bank(self):
+        """Test that parameter bank is created."""
+        pb = make_default_parameter_bank()
+        assert isinstance(pb, ParameterBank)
+
+    def test_contains_required_parameters(self):
+        """Test that required parameters are present."""
+        pb = make_default_parameter_bank()
+        required_params = [
+            "seed",
+            "T_ms",
+            "delay_ms",
+            "dt_sim_ms",
+            "dt_record_ms",
+            "cm_uF_per_cm2",
+            "rL_ohm_cm",
+            "ampa_gmax_uS",
+            "ampa_tau_ms",
+            "gabaa_gmax_uS",
+            "effexc_gmax_uS",
+        ]
+        for param in required_params:
+            assert param in pb.parameters
+
+    def test_default_values(self):
+        """Test that default values are reasonable after sampling."""
+        pb = make_default_parameter_bank()
+        pset = pb.sample()
+        assert pset["T_ms"] == 1000.0
+        assert pset["dt_sim_ms"] == 0.02
+        assert pset["ampa_gmax_uS"] == 0.002
+
+    def test_tau_m_ms_derived_after_sample(self):
+        """Test that derived tau_m_ms is computed by sample()."""
+        from toric_spines_sim.simulation.parameters import get_tau_m
+
+        pb = make_default_parameter_bank()
+        pset = pb.sample()
+        assert pset["tau_m_ms"] == get_tau_m(pset)
+
+
+class TestSynapsePoint:
+    """Test suite for SynapsePoint dataclass."""
+
+    def test_dataclass_fields(self):
+        syn = SynapsePoint(
+            location=(1.0, 2.0, 3.0),
+            model="ampa",
+            mechanism="ampasyn",
+            synapse_params={"gmax_uS": 0.002, "tau_ms": 2.0, "e_mV": 0.0},
+            mechanism_params={"gmax": 0.002, "tau": 2.0, "e": 0.0},
+        )
+        assert syn.location == (1.0, 2.0, 3.0)
+        assert syn.model == "ampa"
+        assert syn.mechanism == "ampasyn"
+        assert syn.synapse_params["gmax_uS"] == 0.002
+        assert syn.mechanism_params["tau"] == 2.0
+
+
+class TestGapJunctionPoint:
+    """Test suite for GapJunctionPoint dataclass."""
+
+    def test_init_basic(self):
+        """Test basic initialization."""
+        gj = GapJunctionPoint(
+            index_pair=(1, 2), location=(3.0, 4.0, 5.0), weight=1.0
+        )
+        assert gj.index_pair == (1, 2)
+        assert gj.location == (3.0, 4.0, 5.0)
+        assert gj.weight == 1.0
+
+    def test_init_with_weight(self):
+        """Test initialization with custom weight."""
+        gj = GapJunctionPoint(index_pair=(1, 2), location=(3.0, 4.0, 5.0), weight=2.5)
+        assert gj.weight == 2.5
+
+
+class TestSynapsePopulation:
+    """Test suite for SynapsePopulation."""
+
+    def test_from_file_ampa(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        population = SynapsePopulation.from_file(
+            sample_synpts_file, model="ampa", global_parameters=pset
+        )
+        assert len(population.synapses) == 3
+        assert population.synapses["syn_0"].model == "ampa"
+        assert population.synapses["syn_0"].mechanism == "ampasyn"
+        assert population.synapses["syn_0"].mechanism_params == {
+            "gmax": 0.002,
+            "tau": 2.0,
+            "e": 0.0,
+        }
+
+    def test_prepare_ampa_wrapper(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        synapses = prepare_ampa_synapses(sample_synpts_file, parameters=pset)
+        assert len(synapses) == 3
+        assert synapses["syn_0"].mechanism == "ampasyn"
+
+    def test_shared_params_without_sampling(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        population = SynapsePopulation.from_file(
+            sample_synpts_file, model="ampa", global_parameters=pset
+        )
+        gmax_values = {
+            syn.synapse_params["gmax_uS"] for syn in population.synapses.values()
+        }
+        assert len(gmax_values) == 1
+
+    def test_per_synapse_sampling_with_override(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        override = ParameterBank(
+            {
+                "ampa_gmax_uS": IndependentScalarParameter(
+                    0.01, is_sampled=True, range=(0.005, 0.02)
+                ),
+            }
+        )
+        population = SynapsePopulation.from_file(
+            sample_synpts_file,
+            model="ampa",
+            global_parameters=pset,
+            parameter_override=override,
+        )
+        gmax_values = [
+            syn.synapse_params["gmax_uS"] for syn in population.synapses.values()
+        ]
+        assert len(set(gmax_values)) > 1
+
+    def test_nmda_mechanism_mapping(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        population = SynapsePopulation.from_file(
+            sample_synpts_file, model="nmda", global_parameters=pset
+        )
+        syn = population.synapses["syn_0"]
+        assert syn.mechanism == "nmdasyn"
+        assert syn.mechanism_params["tau_r"] == 5.0
+        assert syn.mechanism_params["tau_d"] == 50.0
+
+    def test_gabaa_mechanism_mapping(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        population = SynapsePopulation.from_file(
+            sample_synpts_file, model="gabaa", global_parameters=pset
+        )
+        syn = population.synapses["syn_0"]
+        assert syn.mechanism == "gabaasyn"
+        assert syn.mechanism_params["tau"] == 10.0
+        assert syn.mechanism_params["e"] == -75.0
+
+    def test_effexc_mechanism_mapping(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        population = SynapsePopulation.from_file(
+            sample_synpts_file, model="effexc", global_parameters=pset
+        )
+        syn = population.synapses["syn_0"]
+        assert syn.mechanism == "effexcsyn"
+        assert syn.mechanism_params["nmda_ratio"] == 0.5
+        assert syn.mechanism_params["mg"] == 1.0
+
+    def test_invalid_model_raises(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        with pytest.raises(ValueError, match="Invalid model type"):
+            SynapsePopulation.from_file(
+                sample_synpts_file, model="invalid", global_parameters=pset
+            )
+
+    def test_merge_populations(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        ampa = SynapsePopulation.from_file(
+            sample_synpts_file,
+            model="ampa",
+            global_parameters=pset,
+            label_prefix="ampa",
+        )
+        nmda = SynapsePopulation.from_file(
+            sample_synpts_file,
+            model="nmda",
+            global_parameters=pset,
+            label_prefix="nmda",
+        )
+        merged = SynapsePopulation.merge(ampa, nmda)
+        assert len(merged) == 6
+        assert "ampa_0" in merged
+        assert "nmda_0" in merged
+
+    def test_prepare_locations(self, sample_synpts_file):
+        pset = make_default_parameter_bank().sample()
+        synapses = SynapsePopulation.from_file(
+            sample_synpts_file, model="ampa", global_parameters=pset
+        ).synapses
+        assert synapses["syn_0"].location == (1.5, 0.0, 0.0)
+
+
+class TestPrepareGapJunctions:
+    """Test suite for prepare_gap_junctions function."""
+
+    def test_prepare_basic(self, sample_swc_file):
+        """Test basic gap junction preparation."""
+        pset = make_default_parameter_bank().sample()
+        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
+        assert len(gap_junctions) == 1
+        assert "gj_0" in gap_junctions
+
+    def test_prepare_with_custom_weight(self, sample_swc_file):
+        """Test preparation with custom weight."""
+        pb = make_default_parameter_bank()
+        pb["gj_weight"].value = 2.0
+        pset = pb.sample()
+        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
+        assert gap_junctions["gj_0"].weight == 2.0
+
+    def test_prepare_with_parameters(self, sample_swc_file):
+        """Test preparation with sampled parameters."""
+        pb = make_default_parameter_bank()
+        pb["gj_weight"].value = 1.5
+        pset = pb.sample()
+        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
+        assert gap_junctions["gj_0"].weight == 1.5
+
+    def test_prepare_index_pairs(self, sample_swc_file):
+        """Test that index pairs are correct."""
+        pset = make_default_parameter_bank().sample()
+        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
+        assert gap_junctions["gj_0"].index_pair == (3, 4)
+
+    def test_prepare_no_cycle_breaks(self, temp_dir):
+        """Test with SWC file with no cycle breaks."""
+        swc_content = """# No cycle breaks
+1 1 0.0 0.0 0.0 1.0 -1
+2 1 1.0 0.0 0.0 0.8 1
+"""
+        swc_path = temp_dir / "no_breaks.swc"
+        swc_path.write_text(swc_content)
+        pset = make_default_parameter_bank().sample()
+        gap_junctions = prepare_gap_junctions(swc_path, parameters=pset)
+        assert len(gap_junctions) == 0

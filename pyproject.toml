@@ -1,0 +1,54 @@
+[project]
+name = "toric-spines-sim"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "arbor>=0.11.0",
+    "breathe>=4.36.0",
+    "dill>=0.4.1",
+    "furo>=2025.7.19",
+    "ipykernel>=6.30.1",
+    "ipython>=9.5.0",
+    "jscip",
+    "jupyter>=1.1.1",
+    "jupyter-server>=2.17.0",
+    "kaleido>=1.2.0",
+    "logging>=0.4.9.6",
+    "matplotlib>=3.10.6",
+    "myst-parser>=4.0.1",
+    "numpy>=2.3.3",
+    "pandas>=2.3.3",
+    "pdoc>=15.0.4",
+    "plotly>=6.3.0",
+    "pytest>=8.0.0",
+    "pyside6>=6.10.1",
+    "reportlab>=4.4.4",
+    "scipy>=1.16.3",
+    "sphinx>=8.2.3",
+    "svgwrite>=1.4.3",
+    "swctools",
+    "tqdm>=4.67.1",
+    "neurosignature",
+    "dash>=4.1.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["toric_spines_sim"]
+
+[tool.uv.sources]
+jscip = { git = "https://github.com/jmrfox/jscip.git" }
+swctools = { git = "https://github.com/jmrfox/swctools.git" }
+neurosignature = { git = "https://github.com/jmrfox/neurosignature.git" }
+apidump = { git = "https://github.com/jmrfox/apidump.git" }
+
+[dependency-groups]
+dev = [
+    "apidump",
+    "jupytext>=1.19.3",
+]
