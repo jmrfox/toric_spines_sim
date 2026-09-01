@@ -12,6 +12,60 @@ Workflow:
 3. The simulation is carried out using Arbor. We load in the morphology, add mechanisms such as synapses and ion channels, and simulate synaptic inputs. Each synaptic input is specified as a stream of events (time stamps indicating when a synaptic event occurs), which are then applied to the simulation. So, for $N_s$ synapses, we have a set $S = \{S_i | i=1,2,\dots,N_s\}$, where $S_i = \{t_{ij}\}$. The results of the simulation are the membrane potential time-series at a point, such as $V_\text{sink}(t)$, or multiple points; $V(t) = \{V_i(t) | i=1,2,\dots,N_p\}$.
 4.  We can study integrative properties of the TS by designing $S$ and analyzing $V(t)$. A primary analysis is to compute pairwise phenomena: for a pair of synapses $i,j$ with corresponding event rates $\lambda_i,\lambda_j \in \{ \lambda_\text{min}, \lambda_\text{max}\}$, we can run the simulation over the outer product of $S_i$ and $S_j$ and analyze the resulting $V_\text{sink}(t)$. 
 
+## Mesh → skeleton → SWC
+
+Closed triangle meshes for toric spines live under `data/mesh/` (e.g. `TS1.obj`). The preferred stepped workflow is:
+
+1. **Skeletonize** with [pymcfs](https://github.com/jmrfox/pymcfs) → `data/skeletons/<stem>.polylines.txt`
+2. **Review** mesh vs skeleton in `notebooks/ts_morphology/view_skeletons`
+3. **Fit cable SWC** with [mascaf](https://github.com/jmrfox/mascaf) → `data/swc/pixels/<stem>.swc`
+4. **Review** mesh vs SWC in `notebooks/ts_morphology/view_fitted_swc`
+
+These packages are an optional install (not required to run simulations from existing SWCs):
+
+```bash
+# system dependency for pymcfs CHOLMOD (Linux/WSL)
+sudo apt install libsuitesparse-dev
+
+uv sync --extra mesh
+```
+
+Stepped CLI (preferred):
+
+```bash
+uv run python scripts/skeletonize_meshes.py TS1.obj
+uv run python scripts/skeletonize_meshes.py --all
+uv run python scripts/fit_swc.py TS1.obj
+uv run python scripts/fit_swc.py --all --basis-optimize --verbose
+```
+
+Skeletonization defaults match pymcfs `toric_spines/scripts/batch_ts_skeletonize.py`:
+`profile="auto"`, `branching="sparse"`, tip extension on, 500 iterations, 300s timeout.
+
+Combined one-shot (still available):
+
+```bash
+uv run python scripts/mesh_to_swc.py TS1.obj
+uv run python scripts/mesh_to_swc.py TS1.obj --polylines-only
+uv run python scripts/mesh_to_swc.py TS1.obj --fit-only
+```
+
+Library API:
+
+```python
+from toric_spines_sim.geometry import skeletonize_mesh, fit_swc, mesh_to_swc
+from toric_spines_sim.geometry.mesh_pipeline import (
+    default_polylines_path,
+    default_swc_path,
+    resolve_mesh_path,
+)
+
+mesh = resolve_mesh_path("TS1.obj")
+skeletonize_mesh(mesh, default_polylines_path(mesh))
+fit_swc(mesh, default_polylines_path(mesh), default_swc_path(mesh))
+# or: mesh_to_swc("TS1.obj")  # combined
+```
+
 ## Environment (uv)
 
 This project uses [uv](https://docs.astral.sh/uv/) for Python package and environment management.
@@ -78,6 +132,8 @@ Instead of using relative paths like `../../data/swc/pixels/file.swc`, use the p
 from toric_spines_sim.paths import (
     get_swc_path,
     get_pointset_path,
+    get_mesh_path,
+    get_skeleton_path,
     get_simulation_path,
     PROJECT_ROOT,
 )
@@ -85,12 +141,14 @@ from toric_spines_sim.paths import (
 # Get paths to data files
 swc_file = get_swc_path("TS1_s200.swc", units="microns")
 pointset = get_pointset_path("TS1_synpts.txt", units="pixels")
+mesh = get_mesh_path("TS1.obj")
+skeleton = get_skeleton_path("TS1.polylines.txt")
 
 # Get paths within simulation directories
 output_file = get_simulation_path("ts1", "results.html")
 
 # Access project root or data directories directly
-from toric_spines_sim.paths import DATA_DIR, SWC_MICRONS_DIR
+from toric_spines_sim.paths import DATA_DIR, SWC_MICRONS_DIR, MESH_DIR, SKELETONS_DIR
 custom_path = DATA_DIR / "custom" / "file.txt"
 ```
 

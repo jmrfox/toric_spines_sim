@@ -222,6 +222,10 @@ __marimo__/
 ############################
 /toric_spines_sim/__pycache__
 
+# generated mesh skeletons (keep directory via .gitkeep)
+data/skeletons/*
+!data/skeletons/.gitkeep
+
 # simulation results (generated)
 simulations/**/results/*.html
 simulations/**/results/*.pkl

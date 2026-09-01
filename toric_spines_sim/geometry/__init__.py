@@ -40,6 +40,25 @@ from .dendrite import (
     morphology_volume,
     swc_subsystem_surface_area,
 )
+from .mesh_pipeline import (
+    MeshToSwcResult,
+    TORIC_SPINES_SKELETONIZE_DEFAULTS,
+    fit_swc,
+    list_ts_meshes,
+    mesh_to_swc,
+    resolve_mesh_targets,
+    skeletonize_mesh,
+)
+from .prepare import (
+    DEFAULT_SINK_RADIUS_UM,
+    append_sink_write_microns,
+    convert_all_nff_active_zones,
+    convert_nff_active_zone,
+    list_ts_spine_swcs,
+    resolve_swc_targets,
+    scale_swc_file,
+    write_synpts_microns,
+)
 
 __all__ = [
     "scale_one_radius_in_segment_tree_by_coordinates",
@@ -72,4 +91,19 @@ __all__ = [
     "morphology_surface_area",
     "morphology_volume",
     "swc_subsystem_surface_area",
+    "MeshToSwcResult",
+    "TORIC_SPINES_SKELETONIZE_DEFAULTS",
+    "list_ts_meshes",
+    "resolve_mesh_targets",
+    "skeletonize_mesh",
+    "fit_swc",
+    "mesh_to_swc",
+    "DEFAULT_SINK_RADIUS_UM",
+    "append_sink_write_microns",
+    "convert_all_nff_active_zones",
+    "convert_nff_active_zone",
+    "list_ts_spine_swcs",
+    "resolve_swc_targets",
+    "scale_swc_file",
+    "write_synpts_microns",
 ]

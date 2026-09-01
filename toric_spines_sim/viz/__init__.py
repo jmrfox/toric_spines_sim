@@ -33,6 +33,11 @@ from .simulation_dash import (
     prepare_simulation_dashboard_data,
 )
 from .animation import Animation, AnimationFrameCache
+from .mesh_compare import (
+    figure_mesh_and_skeleton,
+    figure_mesh_and_swc,
+    read_polylines_txt,
+)
 
 __all__ = [
     "COLORS",
@@ -63,4 +68,7 @@ __all__ = [
     "prepare_simulation_dashboard_data",
     "Animation",
     "AnimationFrameCache",
+    "read_polylines_txt",
+    "figure_mesh_and_skeleton",
+    "figure_mesh_and_swc",
 ]

@@ -41,11 +41,20 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["toric_spines_sim"]
 
+[project.optional-dependencies]
+mesh = [
+    "pymcfs[cholmod]",
+    # mascaf's package __init__ imports visualization (needs pyvista from viz extra)
+    "mascaf[viz]",
+]
+
 [tool.uv.sources]
 jscip = { git = "https://github.com/jmrfox/jscip.git" }
 swctools = { git = "https://github.com/jmrfox/swctools.git" }
 neurosignature = { git = "https://github.com/jmrfox/neurosignature.git" }
 apidump = { git = "https://github.com/jmrfox/apidump.git" }
+pymcfs = { git = "https://github.com/jmrfox/pymcfs.git", branch = "release" }
+mascaf = { git = "https://github.com/jmrfox/mascaf.git", branch = "release" }
 
 [dependency-groups]
 dev = [

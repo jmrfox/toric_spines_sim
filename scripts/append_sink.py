@@ -1,136 +1,140 @@
 #!/usr/bin/env python3
-"""Append a simple cylindrical "sink" geometry to an SWC file.
+"""Append a cylindrical sink to toric-spine SWCs and write micron-unit files.
 
-This script:
-- Loads an input SWC (the "spine" model).
-- Builds a straight-line chain of one or more cylinders (a "sink") starting from a
-  specified trunk/connection point.
-- Appends the sink as a separate tree to the SWC text and, by default, writes a
-  header annotation `# CYCLE_BREAK reconnect i j` that tools in this repo use to
-  place gap junction pairs at runtime.
-- Writes a new SWC file.
+Pixel-space spines live under ``data/swc/pixels/TS{n}.swc``. This script scales
+them by the project conversion factor (5 nm/pixel) and writes
 
-Notes
------
-- SWC does not encode gap junctions. The `# CYCLE_BREAK reconnect` comment enables
-  downstream code (see `parse_cycle_breaks` in `toric_spines_sim/model.py`) to
-  infer junction placements and create Arbor gap junction connections.
-- This script keeps geometry simple: the sink is colinear along one axis.
+    data/swc/microns/<stem>_wsink_r<R>um.swc
+
+Neck attachment uses ``data/pointsets/pixels/<stem>_neckpoint.txt`` when present,
+otherwise the SWC root. Sink axis is the optimal direction away from the
+morphology. Dimensions are specified in microns.
+
+Examples::
+
+    uv run python scripts/append_sink.py --all
+    uv run python scripts/append_sink.py TS1 TS2
+    uv run python scripts/append_sink.py TS1.swc --radius-um 20
 """
 
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
-from typing import Optional
+import logging
+import sys
 
-from toric_spines_sim.geometry.sink import SinkGeometry, append_sink_to_swc
+from toric_spines_sim.geometry.prepare import (
+    DEFAULT_SINK_CONNECTOR_LENGTH_UM,
+    DEFAULT_SINK_N_CYLINDERS,
+    DEFAULT_SINK_RADIUS_UM,
+    DEFAULT_SINK_TAG,
+    DEFAULT_SINK_TIP_TAG,
+    append_sink_write_microns,
+    resolve_swc_targets,
+)
+from toric_spines_sim.paths import UM_PER_PX
+
+logger = logging.getLogger(__name__)
 
 
 def make_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("swc_in", type=str, help="Path to input SWC file")
-    p.add_argument(
-        "--swc-out",
-        type=str,
-        default=None,
-        help="Path to output SWC (default: <swc_in stem>_with_sink.swc)",
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "swcs",
+        nargs="*",
+        help="SWC path(s) or bare stems under data/swc/pixels/ (e.g. TS1)",
     )
-
-    # Trunk point options
-    g = p.add_argument_group("Trunk point (connection site)")
-    g.add_argument(
-        "--trunk-file",
-        type=str,
-        default=None,
-        help="Path to a text file with three numbers: x y z (whitespace-separated)",
-    )
-    g.add_argument(
-        "--trunk-x", type=float, default=None, help="Trunk X coordinate (µm)"
-    )
-    g.add_argument(
-        "--trunk-y", type=float, default=None, help="Trunk Y coordinate (µm)"
-    )
-    g.add_argument(
-        "--trunk-z", type=float, default=None, help="Trunk Z coordinate (µm)"
-    )
-
-    # Sink geometry
-    p.add_argument(
-        "--radius-um", type=float, default=0.5, help="Sink cylinder radius [µm]"
-    )
-    p.add_argument(
-        "--length-um", type=float, default=100.0, help="Total sink length [µm]"
-    )
-    p.add_argument(
-        "--n-cylinders", type=int, default=1, help="Number of cylinders (segments)"
-    )
-    p.add_argument(
-        "--axis",
-        choices=["x", "y", "z"],
-        default="x",
-        help="Axis along which to extend the sink",
-    )
-
-    # Options
-    p.add_argument(
-        "--node-type",
-        type=int,
-        default=3,
-        help="SWC node type tag to use for sink nodes (default: 3, dendrite)",
-    )
-    p.add_argument(
-        "--no-gj-annotation",
+    parser.add_argument(
+        "--all",
         action="store_true",
-        help="Do not add '# CYCLE_BREAK reconnect' annotation comment to the output",
+        dest="all_swcs",
+        help="Process every TS{n}.swc under data/swc/pixels/",
+    )
+    parser.add_argument(
+        "--radius-um",
+        type=float,
+        default=DEFAULT_SINK_RADIUS_UM,
+        help=f"Sink cylinder radius in µm (default: {DEFAULT_SINK_RADIUS_UM:g})",
+    )
+    parser.add_argument(
+        "--connector-length-um",
+        type=float,
+        default=DEFAULT_SINK_CONNECTOR_LENGTH_UM,
+        help=(
+            "Neck-to-sink connector length in µm "
+            f"(default: {DEFAULT_SINK_CONNECTOR_LENGTH_UM:g})"
+        ),
+    )
+    parser.add_argument(
+        "--n-cylinders",
+        type=int,
+        default=DEFAULT_SINK_N_CYLINDERS,
+        help=f"Number of sink cylinders (default: {DEFAULT_SINK_N_CYLINDERS})",
+    )
+    parser.add_argument(
+        "--tag",
+        type=int,
+        default=DEFAULT_SINK_TAG,
+        help=f"SWC tag for sink nodes (default: {DEFAULT_SINK_TAG})",
+    )
+    parser.add_argument(
+        "--tip-tag",
+        type=int,
+        default=DEFAULT_SINK_TIP_TAG,
+        help=f"SWC tag for the distal sink tip (default: {DEFAULT_SINK_TIP_TAG})",
+    )
+    parser.add_argument(
+        "--um-per-px",
+        type=float,
+        default=UM_PER_PX,
+        help=f"Microns per pixel (default: {UM_PER_PX:g})",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable DEBUG logging",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = make_parser().parse_args(argv)
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(levelname)s %(name)s: %(message)s",
     )
 
-    return p
+    try:
+        targets = resolve_swc_targets(args.swcs, all_swcs=args.all_swcs)
+    except (ValueError, FileNotFoundError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2 if isinstance(exc, ValueError) else 1
 
+    failures = 0
+    for swc_px in targets:
+        try:
+            written = append_sink_write_microns(
+                swc_px,
+                radius_um=args.radius_um,
+                connector_length_um=args.connector_length_um,
+                n_cylinders=args.n_cylinders,
+                um_per_px=args.um_per_px,
+                tag=args.tag,
+                last_segment_tag=args.tip_tag,
+            )
+        except Exception as exc:
+            failures += 1
+            logger.exception("Failed to append sink for %s: %s", swc_px, exc)
+            print(f"error: failed {swc_px.name}: {exc}", file=sys.stderr)
+            continue
+        print(f"swc_in: {swc_px}")
+        print(f"swc_out: {written}")
 
-def resolve_trunk_arg(args: argparse.Namespace):
-    if args.trunk_file:
-        return args.trunk_file
-    if (
-        args.trunk_x is not None
-        and args.trunk_y is not None
-        and args.trunk_z is not None
-    ):
-        return (args.trunk_x, args.trunk_y, args.trunk_z)
-    raise ValueError(
-        "Provide either --trunk-file or all of --trunk-x/--trunk-y/--trunk-z"
-    )
-
-
-def run(args: argparse.Namespace):
-    swc_in = Path(args.swc_in).resolve()
-    if not swc_in.exists():
-        raise FileNotFoundError(f"Input SWC not found: {swc_in}")
-
-    if args.swc_out is None:
-        swc_out = swc_in.with_name(f"{swc_in.stem}_with_sink.swc")
-    else:
-        swc_out = Path(args.swc_out).resolve()
-
-    trunk_point = resolve_trunk_arg(args)
-
-    geom = SinkGeometry(
-        radius=args.radius_um,
-        length=args.length_um,
-        n_cylinders=args.n_cylinders,
-        axis=args.axis,
-    )
-
-    out = append_sink_to_swc(
-        swc_in=swc_in,
-        swc_out=swc_out,
-        trunk_point=trunk_point,
-        geom=geom,
-        node_type=args.node_type,
-        add_gj_annotation=(not args.no_gj_annotation),
-    )
-    print(f"Wrote: {out}")
+    if failures:
+        print(f"error: {failures} of {len(targets)} SWC(s) failed", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    run(make_parser().parse_args())
+    raise SystemExit(main())

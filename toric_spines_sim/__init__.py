@@ -41,7 +41,10 @@ from .geometry import (
 # Path utilities
 from .paths import (
     PathConfig,
+    UM_PER_PX,
     get_data_path,
+    get_mesh_path,
+    get_skeleton_path,
     get_swc_path,
     get_pointset_path,
     get_simulation_path,
@@ -90,9 +93,12 @@ __all__ = [
     # Path utilities
     "PathConfig",
     "get_data_path",
+    "get_mesh_path",
+    "get_skeleton_path",
     "get_swc_path",
     "get_pointset_path",
     "get_simulation_path",
+    "UM_PER_PX",
     # General utilities
     "load_xyz_points",
     "equal_vectors",
