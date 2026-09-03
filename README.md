@@ -20,6 +20,8 @@ Closed triangle meshes for toric spines live under `data/mesh/` (e.g. `TS1.obj`)
 2. **Review** mesh vs skeleton in `notebooks/ts_morphology/view_skeletons`
 3. **Fit cable SWC** with [mascaf](https://github.com/jmrfox/mascaf) → `data/swc/pixels/<stem>.swc`
 4. **Review** mesh vs SWC in `notebooks/ts_morphology/view_fitted_swc`
+5. **Neckpoints** (optional) by comparing each TS mesh to the full cell mesh → `data/pointsets/pixels/<stem>_neckpoint.txt`
+6. **Append sink** with `scripts/append_sink.py` (uses pixel neckpoints when present, else SWC root)
 
 These packages are an optional install (not required to run simulations from existing SWCs):
 
@@ -41,6 +43,17 @@ uv run python scripts/fit_swc.py --all --basis-optimize --verbose
 
 Skeletonization defaults match pymcfs `toric_spines/scripts/batch_ts_skeletonize.py`:
 `profile="auto"`, `branching="sparse"`, tip extension on, 500 iterations, 300s timeout.
+
+Neckpoints (TS mesh vs `data/mesh/cell_wrapped_simplified.obj`):
+
+```bash
+# Single-neck spines: keep the largest detected cap
+uv run python scripts/compute_neckpoints.py TS1 TS2 TS4 TS24 TS48 TS76 --max-necks 1
+# Multi-neck / review without writing
+uv run python scripts/compute_neckpoints.py TS3 --dry-run
+uv run python scripts/compute_neckpoints.py TS21 --max-necks 2
+uv run python scripts/compute_neckpoints.py TS67 --max-necks 1
+```
 
 Combined one-shot (still available):
 

@@ -5,14 +5,15 @@ writes:
 
 - ``data/pointsets/pixels/<stem>_AZ.txt`` — raw active-zone XYZ from NFF
 - ``data/pointsets/microns/<stem>_synpts.txt`` — AZ projected onto the SWC, in µm
-- ``data/swc/microns/<stem>_wsink_r<R>um.swc`` — spine + cylindrical sink, in µm
+- ``data/pointsets/microns/<stem>_neckpoint.txt`` — neckpoints scaled to µm
+- ``data/swc/pixels/<stem>_wsink_r<R>um.swc`` — spine + sink, pixel units
+- ``data/swc/microns/<stem>_wsink_r<R>um.swc`` — spine + sink, micron units
 """
 
 from __future__ import annotations
 
 import logging
 import re
-import tempfile
 from pathlib import Path
 from typing import Optional, Sequence, Tuple, Union
 
@@ -44,6 +45,11 @@ logger = logging.getLogger(__name__)
 PathLike = Union[str, Path]
 
 _TS_STEM = re.compile(r"^TS\d+$")
+_SINK_LENGTH_RE = re.compile(r"(length=)([-+0-9.eE]+)")
+_SINK_RADIUS_RE = re.compile(r"(radius=)([-+0-9.eE]+)")
+_SINK_NECK_XYZ_RE = re.compile(
+    r"(neck_xyz=)([-+0-9.eE]+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)"
+)
 
 DEFAULT_SINK_RADIUS_UM = 10.0
 DEFAULT_SINK_CONNECTOR_LENGTH_UM = 5.0
@@ -135,14 +141,45 @@ def convert_all_nff_active_zones() -> list[Path]:
     return written
 
 
+def _scale_sink_header_line(line: str, scale: float) -> str:
+    """Scale length/radius/neck_xyz fields in a ``# SINK:`` header line."""
+    if not line.startswith("# SINK:"):
+        return line
+
+    def _scale_num(match: re.Match[str]) -> str:
+        return f"{match.group(1)}{float(match.group(2)) * scale:g}"
+
+    line = _SINK_LENGTH_RE.sub(_scale_num, line)
+    line = _SINK_RADIUS_RE.sub(_scale_num, line)
+
+    def _scale_neck(match: re.Match[str]) -> str:
+        x = float(match.group(2)) * scale
+        y = float(match.group(3)) * scale
+        z = float(match.group(4)) * scale
+        return f"{match.group(1)}{x:.6f} {y:.6f} {z:.6f}"
+
+    return _SINK_NECK_XYZ_RE.sub(_scale_neck, line)
+
+
 def scale_swc_file(swc_in: PathLike, swc_out: PathLike, scale: float) -> Path:
-    """Scale SWC coordinates and radii, preserving CYCLE_BREAK header comments."""
+    """Scale SWC coordinates and radii, preserving CYCLE_BREAK / SINK headers.
+
+    ``SWCModel.scale`` keeps header text verbatim, so ``# SINK:`` length, radius,
+    and ``neck_xyz`` are rewritten here to match the scaled geometry.
+    """
     swc_in = Path(swc_in)
     swc_out = Path(swc_out)
     swc_out.parent.mkdir(parents=True, exist_ok=True)
     model = SWCModel.from_swc_file(str(swc_in), validate_reconnections=False)
     scaled = model.scale(scale)
     scaled.to_swc_file(str(swc_out))
+
+    lines = swc_out.read_text(encoding="utf-8").splitlines(keepends=True)
+    rewritten = [
+        _scale_sink_header_line(line, scale) if line.startswith("# SINK:") else line
+        for line in lines
+    ]
+    swc_out.write_text("".join(rewritten), encoding="utf-8")
     return swc_out.resolve()
 
 
@@ -213,6 +250,106 @@ def resolve_neck_points_px(
     return [root_xyz], "swc_root"
 
 
+def append_sink_write(
+    swc_px: PathLike,
+    *,
+    neck_file: Optional[PathLike] = None,
+    radius_um: float = DEFAULT_SINK_RADIUS_UM,
+    connector_length_um: float = DEFAULT_SINK_CONNECTOR_LENGTH_UM,
+    n_cylinders: int = DEFAULT_SINK_N_CYLINDERS,
+    um_per_px: float = UM_PER_PX,
+    swc_out_px: Optional[PathLike] = None,
+    swc_out_um: Optional[PathLike] = None,
+    neck_out_um: Optional[PathLike] = None,
+    tag: int = DEFAULT_SINK_TAG,
+    last_segment_tag: int = DEFAULT_SINK_TIP_TAG,
+) -> Tuple[Path, Path]:
+    """Append a sink in pixel space, then write both pixel and micron SWCs.
+
+    Sink dimensions are specified in microns and converted to pixels for
+    attachment. Outputs:
+
+    - ``data/swc/pixels/<stem>_wsink_r<R>um.swc``
+    - ``data/swc/microns/<stem>_wsink_r<R>um.swc`` (scaled copy with SINK header fixed)
+    - ``data/pointsets/microns/<stem>_neckpoint.txt``
+
+    Returns ``(swc_out_px, swc_out_um)``.
+    """
+    swc_px = Path(swc_px)
+    stem = swc_px.stem
+    if swc_out_px is None:
+        swc_out_px = get_swc_path(f"{stem}_wsink_r{radius_um:g}um.swc", units="pixels")
+    else:
+        swc_out_px = Path(swc_out_px)
+    if swc_out_um is None:
+        swc_out_um = get_swc_path(f"{stem}_wsink_r{radius_um:g}um.swc", units="microns")
+    else:
+        swc_out_um = Path(swc_out_um)
+    swc_out_px.parent.mkdir(parents=True, exist_ok=True)
+    swc_out_um.parent.mkdir(parents=True, exist_ok=True)
+
+    neck_xyzs_px, neck_source = resolve_neck_points_px(swc_px, neck_file)
+    neck_xyzs_um = [
+        (x * um_per_px, y * um_per_px, z * um_per_px) for x, y, z in neck_xyzs_px
+    ]
+
+    if neck_out_um is None:
+        neck_out_um = get_pointset_path(f"{stem}_neckpoint.txt", units="microns")
+    write_xyz_points(neck_out_um, neck_xyzs_um)
+
+    # Ensure a pixel neckpoint file exists for multi-neck append / direction.
+    neck_px_path = Path(neck_file) if neck_file is not None else (
+        POINTSETS_PIXELS_DIR / f"{stem}_neckpoint.txt"
+    )
+    if not neck_px_path.exists():
+        write_xyz_points(neck_px_path, neck_xyzs_px)
+
+    radius_px = float(radius_um) / float(um_per_px)
+    connector_length_px = float(connector_length_um) / float(um_per_px)
+    direction = optimal_sink_direction(neck_px_path, swc_px)
+
+    geom = SinkGeometry(
+        radius=radius_px,
+        length=2.0 * radius_px,
+        n_cylinders=int(n_cylinders),
+        connector_length=connector_length_px,
+        axis=direction,
+    )
+    logger.info(
+        "%s sink axis=%s neck_source=%s radius=%.3g µm (%.3g px) necks=%d",
+        stem,
+        direction,
+        neck_source,
+        radius_um,
+        radius_px,
+        len(neck_xyzs_px),
+    )
+
+    if len(neck_xyzs_px) > 1:
+        written_px = append_sink_to_swc_multi_neck_points(
+            swc_in=swc_px,
+            swc_out=swc_out_px,
+            neck_points=neck_px_path,
+            geom=geom,
+            tag=tag,
+            last_segment_tag=last_segment_tag,
+        )
+    else:
+        written_px = append_sink_to_swc(
+            swc_in=swc_px,
+            swc_out=swc_out_px,
+            neck_coords=neck_xyzs_px[0],
+            geom=geom,
+            tag=tag,
+            last_segment_tag=last_segment_tag,
+        )
+    written_px = Path(written_px).resolve()
+    written_um = scale_swc_file(written_px, swc_out_um, um_per_px)
+    logger.info("Wrote spine+sink (px) to %s", written_px)
+    logger.info("Wrote spine+sink (µm) to %s", written_um)
+    return written_px, written_um
+
+
 def append_sink_write_microns(
     swc_px: PathLike,
     *,
@@ -225,71 +362,23 @@ def append_sink_write_microns(
     neck_out: Optional[PathLike] = None,
     tag: int = DEFAULT_SINK_TAG,
     last_segment_tag: int = DEFAULT_SINK_TIP_TAG,
+    swc_out_px: Optional[PathLike] = None,
 ) -> Path:
-    """Scale a pixel SWC to microns, append a sink, and write the combined file.
+    """Append a sink and write micron (and pixel) SWCs; return the micron path.
 
-    Sink dimensions are specified in microns. The sink axis is the optimal
-    direction away from the morphology at the neck.
+    Prefer :func:`append_sink_write` when both output paths are needed.
     """
-    swc_px = Path(swc_px)
-    if swc_out is None:
-        swc_out = get_swc_path(f"{swc_px.stem}_wsink_r{radius_um:g}um.swc", units="microns")
-    else:
-        swc_out = Path(swc_out)
-    swc_out.parent.mkdir(parents=True, exist_ok=True)
-
-    neck_xyzs_px, neck_source = resolve_neck_points_px(swc_px, neck_file)
-    neck_xyzs_um = [
-        (x * um_per_px, y * um_per_px, z * um_per_px) for x, y, z in neck_xyzs_px
-    ]
-
-    if neck_out is None:
-        neck_out = get_pointset_path(f"{swc_px.stem}_neckpoint.txt", units="microns")
-    write_xyz_points(neck_out, neck_xyzs_um)
-
-    geom = SinkGeometry(
-        radius=float(radius_um),
-        length=2.0 * float(radius_um),
-        n_cylinders=int(n_cylinders),
-        connector_length=float(connector_length_um),
-        axis="x",  # replaced below after direction is known
+    _px, um = append_sink_write(
+        swc_px,
+        neck_file=neck_file,
+        radius_um=radius_um,
+        connector_length_um=connector_length_um,
+        n_cylinders=n_cylinders,
+        um_per_px=um_per_px,
+        swc_out_px=swc_out_px,
+        swc_out_um=swc_out,
+        neck_out_um=neck_out,
+        tag=tag,
+        last_segment_tag=last_segment_tag,
     )
-
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_dir = Path(tmp)
-        scaled_swc = tmp_dir / f"{swc_px.stem}.swc"
-        scale_swc_file(swc_px, scaled_swc, um_per_px)
-        neck_um_tmp = tmp_dir / "neck.txt"
-        write_xyz_points(neck_um_tmp, neck_xyzs_um)
-
-        direction = optimal_sink_direction(neck_um_tmp, scaled_swc)
-        geom.axis = direction
-        logger.info(
-            "%s sink axis=%s neck_source=%s radius=%.3g µm",
-            swc_px.stem,
-            direction,
-            neck_source,
-            radius_um,
-        )
-
-        if len(neck_xyzs_um) > 1:
-            written = append_sink_to_swc_multi_neck_points(
-                swc_in=scaled_swc,
-                swc_out=swc_out,
-                neck_points=neck_um_tmp,
-                geom=geom,
-                tag=tag,
-                last_segment_tag=last_segment_tag,
-            )
-        else:
-            written = append_sink_to_swc(
-                swc_in=scaled_swc,
-                swc_out=swc_out,
-                neck_coords=neck_xyzs_um[0],
-                geom=geom,
-                tag=tag,
-                last_segment_tag=last_segment_tag,
-            )
-
-    logger.info("Wrote spine+sink (µm) to %s", written)
-    return Path(written).resolve()
+    return um

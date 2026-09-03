@@ -161,12 +161,21 @@ def figure_mesh_and_swc(
     cable_opacity: float = 0.8,
     cable_color: str = "lightblue",
     sides: int = 16,
+    neck_points: Sequence[Sequence[float]] | None = None,
+    neck_point_size: float = 6.0,
+    neck_point_color: str = "#e74c3c",
 ):
     """Build a Plotly figure overlaying a mesh with a fitted cable model.
 
     Uses ``swctools.plot_model`` (same path as mascaf demos) so the SWC is
     rendered as frusta with optional terminal endcaps, not just the centroid
     graph.
+
+    Parameters
+    ----------
+    neck_points
+        Optional XYZ points (same units as the mesh/SWC) drawn as markers,
+        typically pixel-space neckpoints from ``*_neckpoint.txt``.
     """
     from swctools import SWCModel, plot_model
 
@@ -191,6 +200,31 @@ def figure_mesh_and_swc(
     )
     mesh_trace = _mesh_surface_trace(mesh, opacity=mesh_opacity, name=mesh_path.name)
     go = _require_plotly()
-    combined = go.Figure(data=[mesh_trace, *fig.data], layout=fig.layout)
-    combined.update_layout(scene=dict(aspectmode="data"))
+    traces = [mesh_trace, *fig.data]
+    if neck_points:
+        pts = np.asarray(neck_points, dtype=float).reshape(-1, 3)
+        traces.append(
+            go.Scatter3d(
+                x=pts[:, 0],
+                y=pts[:, 1],
+                z=pts[:, 2],
+                mode="markers",
+                marker=dict(
+                    size=neck_point_size,
+                    color=neck_point_color,
+                    symbol="diamond",
+                    line=dict(width=1, color="#922b21"),
+                ),
+                name="neckpoint",
+                showlegend=True,
+            )
+        )
+    combined = go.Figure(data=traces, layout=fig.layout)
+    title = f"{mesh_path.stem}: mesh + cable"
+    if neck_points:
+        title = f"{mesh_path.stem}: mesh + cable + neckpoint(s)"
+    combined.update_layout(
+        title=title,
+        scene=dict(aspectmode="data"),
+    )
     return combined

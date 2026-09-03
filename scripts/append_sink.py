@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Append a cylindrical sink to toric-spine SWCs and write micron-unit files.
+"""Append a cylindrical sink to toric-spine SWCs (pixels and microns).
 
-Pixel-space spines live under ``data/swc/pixels/TS{n}.swc``. This script scales
-them by the project conversion factor (5 nm/pixel) and writes
+Pixel-space spines live under ``data/swc/pixels/TS{n}.swc``. This script
+appends a sink using ``data/pointsets/pixels/<stem>_neckpoint.txt`` when
+present (else the SWC root) and writes:
 
+    data/swc/pixels/<stem>_wsink_r<R>um.swc
     data/swc/microns/<stem>_wsink_r<R>um.swc
+    data/pointsets/microns/<stem>_neckpoint.txt
 
-Neck attachment uses ``data/pointsets/pixels/<stem>_neckpoint.txt`` when present,
-otherwise the SWC root. Sink axis is the optimal direction away from the
-morphology. Dimensions are specified in microns.
+Sink dimensions are specified in microns (converted to pixels for attachment).
+Sink axis is the optimal direction away from the morphology.
 
 Examples::
 
@@ -29,7 +31,7 @@ from toric_spines_sim.geometry.prepare import (
     DEFAULT_SINK_RADIUS_UM,
     DEFAULT_SINK_TAG,
     DEFAULT_SINK_TIP_TAG,
-    append_sink_write_microns,
+    append_sink_write,
     resolve_swc_targets,
 )
 from toric_spines_sim.paths import UM_PER_PX
@@ -113,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     failures = 0
     for swc_px in targets:
         try:
-            written = append_sink_write_microns(
+            written_px, written_um = append_sink_write(
                 swc_px,
                 radius_um=args.radius_um,
                 connector_length_um=args.connector_length_um,
@@ -128,7 +130,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: failed {swc_px.name}: {exc}", file=sys.stderr)
             continue
         print(f"swc_in: {swc_px}")
-        print(f"swc_out: {written}")
+        print(f"swc_out_px: {written_px}")
+        print(f"swc_out_um: {written_um}")
 
     if failures:
         print(f"error: {failures} of {len(targets)} SWC(s) failed", file=sys.stderr)

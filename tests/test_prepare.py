@@ -93,6 +93,7 @@ class TestSynptsAndSink:
         neck = temp_dir / "neck.txt"
         neck.write_text("0.0 0.0 0.0\n")
         swc_out = temp_dir / "with_sink.swc"
+        swc_out_px = temp_dir / "with_sink_px.swc"
         neck_out = temp_dir / "neck_um.txt"
         written = append_sink_write_microns(
             sample_swc_file,
@@ -102,12 +103,14 @@ class TestSynptsAndSink:
             n_cylinders=5,
             um_per_px=UM_PER_PX,
             swc_out=swc_out,
+            swc_out_px=swc_out_px,
             neck_out=neck_out,
         )
         assert written == swc_out.resolve()
+        assert swc_out_px.is_file()
         header = swc_out.read_text()
         assert "# SINK:" in header
-        assert "radius=10.0" in header or "radius=10" in header
+        assert "radius=10" in header
         assert "last_segment_tag=6" in header
         pts = read_swc_points(swc_out)
         # Original node 1 was at (0,0,0) r=1; in microns r=0.005.
@@ -116,9 +119,39 @@ class TestSynptsAndSink:
         sink_radii = [r for (_x, _y, _z, r) in pts.values() if r > 1.0]
         assert sink_radii
         assert all(r == pytest.approx(10.0) for r in sink_radii)
+        # Pixel SWC sink radius is 10 / UM_PER_PX.
+        pts_px = read_swc_points(swc_out_px)
+        sink_radii_px = [r for (_x, _y, _z, r) in pts_px.values() if r > 100.0]
+        assert sink_radii_px
+        assert all(r == pytest.approx(10.0 / UM_PER_PX) for r in sink_radii_px)
         neck_um = load_xyz_points(neck_out)
         assert neck_um[0] == pytest.approx((0.0, 0.0, 0.0))
         assert parse_cycle_breaks(swc_out) == parse_cycle_breaks(sample_swc_file)
+
+    def test_scale_swc_scales_sink_header(self, sample_swc_file, temp_dir):
+        from toric_spines_sim.geometry.prepare import append_sink_write
+
+        neck = temp_dir / "neck.txt"
+        neck.write_text("0.0 0.0 0.0\n")
+        px_out = temp_dir / "px.swc"
+        um_out = temp_dir / "um.swc"
+        append_sink_write(
+            sample_swc_file,
+            neck_file=neck,
+            radius_um=10.0,
+            swc_out_px=px_out,
+            swc_out_um=um_out,
+            neck_out_um=temp_dir / "neck_um.txt",
+        )
+        px_sink = next(
+            line for line in px_out.read_text().splitlines() if line.startswith("# SINK:")
+        )
+        um_sink = next(
+            line for line in um_out.read_text().splitlines() if line.startswith("# SINK:")
+        )
+        assert "radius=2000" in px_sink or "radius=2000.0" in px_sink
+        assert "radius=10" in um_sink
+        assert "neck_xyz=0.000000 0.000000 0.000000" in um_sink
 
     def test_append_sink_falls_back_to_swc_root(self, sample_swc_file, temp_dir):
         swc_out = temp_dir / "with_sink.swc"

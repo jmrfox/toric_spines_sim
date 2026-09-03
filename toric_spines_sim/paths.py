@@ -54,6 +54,14 @@ def get_mesh_path(filename: str) -> Path:
     return MESH_DIR / filename
 
 
+CELL_MESH_NAME = "cell_wrapped_simplified.obj"
+
+
+def get_cell_mesh_path() -> Path:
+    """Path to the full-cell triangle mesh under ``data/mesh/``."""
+    return MESH_DIR / CELL_MESH_NAME
+
+
 def get_skeleton_path(filename: str) -> Path:
     """Get path to a skeleton / polylines file under ``data/skeletons/``.
 

@@ -85,11 +85,17 @@ def _require_mascaf():
 
 
 def resolve_mesh_path(mesh: PathLike) -> Path:
-    """Resolve a mesh path; bare filenames are looked up under ``data/mesh/``."""
+    """Resolve a mesh path; bare stems/filenames are looked up under ``data/mesh/``.
+
+    Accepts ``TS1``, ``TS1.obj``, or an absolute/relative path.
+    """
     path = Path(mesh)
     if path.is_file():
         return path.resolve()
-    candidate = get_mesh_path(path.name)
+    name = path.name
+    if not name.lower().endswith((".obj", ".ply", ".stl", ".off")):
+        name = f"{name}.obj"
+    candidate = get_mesh_path(name)
     if candidate.is_file():
         return candidate.resolve()
     if path.exists():
