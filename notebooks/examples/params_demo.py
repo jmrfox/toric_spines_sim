@@ -6,18 +6,21 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.3
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: .venv
 #     language: python
 #     name: python3
 # ---
 
+# %% [markdown]
+# Canonical example: ``jscip.ParameterBank`` sampling (no Arbor run).
+
 # %%
 from jscip import ParameterBank, IndependentScalarParameter, DerivedParameter
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 pb = ParameterBank(
     {

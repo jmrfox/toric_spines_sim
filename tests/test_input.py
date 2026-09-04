@@ -68,7 +68,6 @@ class TestRemapAxonChannelEventsToSynapses:
         _, _, axon_synapses = load_axon_events_from_file(
             axon_assignment_file=assignment_file,
             axon_rates_hz=[5.0] * 10,
-            T_ms=100.0,
         )
 
         channel_events = self._make_tsgroup(

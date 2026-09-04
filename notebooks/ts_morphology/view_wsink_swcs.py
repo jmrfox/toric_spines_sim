@@ -35,7 +35,7 @@ UNITS: str = "microns"
 # Optional: restrict to stems, e.g. ["TS1", "TS3"]. Empty = all wsink SWCs.
 STEMS: list[str] = []
 # Prefer this sink radius label when multiple exist for one stem (e.g. "10").
-PREFERRED_RADIUS_UM: str = "5"
+PREFERRED_RADIUS_UM: str = "10"
 
 # %%
 swc_dir = SWC_MICRONS_DIR if UNITS == "microns" else SWC_PIXELS_DIR

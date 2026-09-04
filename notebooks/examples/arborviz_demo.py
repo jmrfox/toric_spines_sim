@@ -13,15 +13,16 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# Exploratory swctools / arborviz demo — **not a supported experiment**.
+# Current TS2 morphology is ``TS2_wsink_r10um.swc`` (use ``view_wsink_swcs``).
+
 # %%
-import sys
-
-sys.path.append("../")
-
 from swctools import SWCModel, PointSet, FrustaSet, plot_model
 
 import arbor as A
 from toric_spines_sim.viz import *
+from toric_spines_sim.paths import get_pointset_path, get_swc_path
 
 # %% [markdown]
 # This notebook demos the functionality in `arborviz`.
@@ -29,8 +30,8 @@ from toric_spines_sim.viz import *
 # Before looking at `arborviz`, however, we can load out model in using my `swctools` package. This consists of a morphology and a set of locations.
 
 # %%
-swc_filepath = "../data/swc/pixels/TS2_s50.swc"
-ps_filepath = "../data/pointsets/pixels/TS2_AZ.txt"
+swc_filepath = get_swc_path("TS2.swc", units="pixels")
+ps_filepath = get_pointset_path("TS2_AZ.txt", units="pixels")
 
 swc = SWCModel.from_swc_file(swc_filepath)
 frusta = FrustaSet.from_swc_model(swc, sides=20, end_caps=False)

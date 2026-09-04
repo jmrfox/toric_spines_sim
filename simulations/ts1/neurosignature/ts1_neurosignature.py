@@ -1,4 +1,17 @@
-"""Neurosignature analysis pipeline for TS1 morphology."""
+"""Neurosignature analysis pipeline for TS1 morphology.
+
+Inputs
+    data/swc/microns/TS1_wsink_r10um.swc
+    data/pointsets/microns/TS1_synpts.txt
+    data/pointsets/microns/TS1_neckpoint.txt
+
+Run from the repository root::
+
+    uv run python -m simulations.ts1.neurosignature.ts1_neurosignature
+
+Success: descriptor matrices and figures under ``simulations/ts1/results/``.
+Requires the private ``neurosignature`` git dependency.
+"""
 
 import logging
 from pathlib import Path
@@ -9,18 +22,17 @@ import pynapple as nap
 import neurosignature as ns
 
 from toric_spines_sim.paths import get_swc_path, get_pointset_path, get_simulation_path
-from toric_spines_sim.simulation import TSSimulator
+from toric_spines_sim.simulation import TSSimulator, make_default_parameter_bank
 from toric_spines_sim.utils import load_xyz_points
-from toric_spines_sim import make_simulator_parameter_bank
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-swc_filepath = get_swc_path("TS1_wsink_r20um.swc", units="microns")
+swc_filepath = get_swc_path("TS1_wsink_r10um.swc", units="microns")
 synpts_filepath = get_pointset_path("TS1_synpts.txt", units="microns")
 n_synapses = len(load_xyz_points(synpts_filepath))
 
-parameter_bank = make_simulator_parameter_bank()
+parameter_bank = make_default_parameter_bank()
 parameter_bank["T_ms"].value = 2000  # 2 seconds for neurosignature analysis
 parameter_bank["delay_ms"].value = 20
 parameter_bank["discretization_um"].value = 1.0
@@ -32,18 +44,10 @@ parameter_bank["neck_radius_scale"].value = 1.0
 # but analysis from Sanculi gives O(1 uF/cm^2)
 parameter_bank["cm_uF_per_cm2"].value = 2.0
 parameter_bank["rL_ohm_cm"].value = 150
-# hh
+# hh_tags empty + hh_scale 0 keeps the sink passive
 hh_on = False
-hh_scale = 1.0
 parameter_bank["hh_leak_e_mV"].value = -54.3
-if hh_on:
-    parameter_bank["K_gbar_S_per_cm2"].value = 0.036 * hh_scale  # hh value = 0.036
-    parameter_bank["Na_gbar_S_per_cm2"].value = 0.12 * hh_scale  # hh value = 0.12
-    parameter_bank["hh_leak_g_S_per_cm2"].value = 0.0003 * hh_scale  # hh value = 0.0003
-else:
-    parameter_bank["K_gbar_S_per_cm2"].value = 0.0
-    parameter_bank["Na_gbar_S_per_cm2"].value = 0.0
-    parameter_bank["hh_leak_g_S_per_cm2"].value = 0.0
+parameter_bank["hh_scale"].value = 1.0 if hh_on else 0.0
 # passive leak
 # Arbor's "default" leak conductance = 0.001 S/cm^2
 leak_on = True
@@ -55,6 +59,7 @@ else:
 parameter_bank["ampa_gmax_uS"].value = 0.1
 parameter_bank["ampa_tau_ms"].value = 2.0
 parameters = parameter_bank.sample()
+parameters["hh_tags"] = [5] if hh_on else []
 
 # Load neck point coordinates for reference channel
 neckpoint_filepath = get_pointset_path("TS1_neckpoint.txt", units="microns")

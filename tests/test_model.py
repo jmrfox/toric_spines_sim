@@ -15,7 +15,6 @@ from toric_spines_sim import (
     SynapsePoint,
     SynapsePopulation,
     GapJunctionPoint,
-    prepare_ampa_synapses,
     prepare_gap_junctions,
 )
 
@@ -264,9 +263,11 @@ class TestSynapsePopulation:
             "e": 0.0,
         }
 
-    def test_prepare_ampa_wrapper(self, sample_synpts_file):
+    def test_from_file_ampa_dict(self, sample_synpts_file):
         pset = make_default_parameter_bank().sample()
-        synapses = prepare_ampa_synapses(sample_synpts_file, parameters=pset)
+        synapses = SynapsePopulation.from_file(
+            sample_synpts_file, model="ampa", global_parameters=pset
+        ).synapses
         assert len(synapses) == 3
         assert synapses["syn_0"].mechanism == "ampasyn"
 
@@ -407,3 +408,89 @@ class TestPrepareGapJunctions:
         pset = make_default_parameter_bank().sample()
         gap_junctions = prepare_gap_junctions(swc_path, parameters=pset)
         assert len(gap_junctions) == 0
+
+
+class TestReconnectAndGapJunctionMapping:
+    """MULTI_NECK parsing and distinct Arbor locations for colocated samples."""
+
+    def test_parse_multi_neck_and_cycle_together(self, temp_dir):
+        from toric_spines_sim.geometry.swc import (
+            parse_multi_neck_reconnects,
+            parse_reconnect_pairs,
+        )
+
+        swc_content = """# CYCLE_BREAK reconnect 3 4
+# MULTI_NECK reconnect 1 4
+1 1 0.0 0.0 0.0 1.0 -1
+2 1 1.0 0.0 0.0 0.8 1
+3 1 2.0 0.0 0.0 0.6 2
+4 1 2.0 0.0 0.0 0.6 2
+"""
+        swc_path = temp_dir / "multi.swc"
+        swc_path.write_text(swc_content)
+        assert parse_multi_neck_reconnects(swc_path) == [(1, 4)]
+        pairs = parse_reconnect_pairs(swc_path)
+        assert (3, 4) in pairs
+        assert (1, 4) in pairs
+
+    def test_prepare_gap_junctions_includes_multi_neck(self, temp_dir):
+        swc_content = """# CYCLE_BREAK reconnect 3 4
+# MULTI_NECK reconnect 1 4
+1 1 0.0 0.0 0.0 1.0 -1
+2 1 1.0 0.0 0.0 0.8 1
+3 1 2.0 0.0 0.0 0.6 2
+4 1 2.0 0.0 0.0 0.6 2
+"""
+        swc_path = temp_dir / "multi.swc"
+        swc_path.write_text(swc_content)
+        pset = make_default_parameter_bank().sample()
+        gap_junctions = prepare_gap_junctions(swc_path, parameters=pset)
+        assert len(gap_junctions) == 2
+        index_pairs = {gj.index_pair for gj in gap_junctions.values()}
+        assert (3, 4) in index_pairs
+        assert (1, 4) in index_pairs
+
+    def test_colocated_cycle_break_maps_to_distinct_locations(self, sample_swc_file):
+        import arbor as A
+        from toric_spines_sim.geometry.swc import arbor_locations_for_swc_nodes
+
+        loaded = A.load_swc_arbor(str(sample_swc_file))
+        segment_tree = loaded.segment_tree
+        morphology = A.morphology(segment_tree)
+        locs = arbor_locations_for_swc_nodes(
+            sample_swc_file, morphology, segment_tree, [3, 4]
+        )
+        a, b = locs[3], locs[4]
+        assert (a.branch, round(a.pos, 6)) != (b.branch, round(b.pos, 6))
+
+    def test_kmatrix_event_generator_api(self):
+        from toric_spines_sim.kmatrix import _events_for_rates
+
+        pset = make_default_parameter_bank().sample()
+        events = _events_for_rates(
+            [0.0, 10.0],
+            pset,
+            "poisson",
+            ["syn_0", "syn_1"],
+        )
+        assert len(events) == 2
+
+    def test_missing_catalogue_error_mentions_rebuild(self, monkeypatch, sample_swc_file, tmp_path):
+        from pathlib import Path
+        from toric_spines_sim.model import TSModel
+        from toric_spines_sim.model import model as model_mod
+
+        monkeypatch.setattr(
+            model_mod, "CUSTOM_CATALOGUE_PATH", tmp_path / "missing-catalogue.so"
+        )
+        pset = make_default_parameter_bank().sample()
+        tsm = TSModel(
+            swc_path=sample_swc_file,
+            synapses={},
+            gap_junctions={},
+            record_points={},
+            parameters=pset,
+        )
+        with pytest.raises(FileNotFoundError, match="make_custom_catalogue"):
+            tsm.build_cell()
+

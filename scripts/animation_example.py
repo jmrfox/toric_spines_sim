@@ -10,9 +10,11 @@ from pathlib import Path
 import numpy as np
 from swctools import FrustaSet, animate_frusta_timeseries
 
+from toric_spines_sim.paths import get_swc_path
+
 logging.basicConfig(level=logging.INFO)
 
-swc_filepath = Path("data/swc/microns/TS2_s50.swc")
+swc_filepath = get_swc_path("TS2_wsink_r10um.swc", units="microns")
 frusta = FrustaSet.from_swc_file(swc_filepath)
 
 animation_file = Path("animations/example.html")

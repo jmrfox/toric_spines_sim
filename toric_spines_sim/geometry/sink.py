@@ -1,3 +1,15 @@
+"""Cylindrical sink geometry and SWC append helpers.
+
+Isolated toric-spine SWCs need a surrogate "rest of cell" so current can
+diffuse out of the spine. This module builds a straight cylinder (tag 5,
+tip tag 6) and appends it at a neck point.
+
+SWC header conventions written by ``append_sink_to_swc*``:
+
+- ``# SINK: start=..., end=..., neck_xyz=...`` — sink sample range and neck
+- ``# MULTI_NECK reconnect i j`` — extra neck tied to a copy of the sink start
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

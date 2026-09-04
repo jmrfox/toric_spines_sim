@@ -3,7 +3,7 @@
 from .model import TSModel
 from .recipe import TSRecipe
 from .gj import GapJunctionPoint, prepare_gap_junctions
-from .synapse import SynapsePoint, SynapsePopulation, prepare_ampa_synapses
+from .synapse import SynapsePoint, SynapsePopulation
 
 __all__ = [
     "TSModel",
@@ -12,5 +12,4 @@ __all__ = [
     "prepare_gap_junctions",
     "SynapsePoint",
     "SynapsePopulation",
-    "prepare_ampa_synapses",
 ]

@@ -13,6 +13,10 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# Exploratory Arbor tutorial — **not a supported experiment**.
+# For package simulations use ``TSSimulator`` and ``notebooks/examples/``.
+
 # %%
 import arbor as A
 from arbor import units as U

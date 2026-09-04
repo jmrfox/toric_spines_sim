@@ -23,15 +23,12 @@ def load_axon_events_from_file(
             Synapse indices are 1-based.
         axon_rates_hz: List of rates for each axon (Hz). Length must match
             number of lines in the file. Use 0.0 to turn an axon off.
-        T_ms: Total simulation time in milliseconds.
-        delay_ms: Time before events start (ms). Default: 0.0.
-        seed: Random seed for reproducibility (passed through, not used for
-            periodic events).
 
     Returns:
-        Tuple of (rate_curves, n_synapses_per_axon) where:
+        Tuple of ``(rate_curves, n_synapses_per_axon, axon_synapses)``:
         - rate_curves: List of FlatRateCurve objects (one per axon)
         - n_synapses_per_axon: List of synapse counts per axon
+        - axon_synapses: 0-based synapse index lists per axon
     """
     # Read synapse assignments from file
     axon_synapses = []

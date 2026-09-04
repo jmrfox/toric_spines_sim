@@ -1,8 +1,16 @@
 """
-Toric Spines Simulation utilities.
+Arbor simulations of barn-owl toric spines (Sanculi et al., 2020).
 
-This package contains helper modules to build, inspect, and visualize
-Arbor cable-cell models for spine-centric simulations.
+Package map
+-----------
+geometry/     SWC I/O, cycle/multi-neck reconnects, sink append, dendrite helpers
+model/        TSModel, synapses, gap junctions, TSRecipe
+simulation/   parameter banks, TSSimulator, axon inputs, SimulationResults
+events/       rate curves and event generators
+viz/          Plotly / Dash / animation helpers
+kmatrix.py    pairwise integration (k-matrix)
+report.py     PDF reports
+paths.py      repo-root data and simulation path helpers
 """
 
 # Submodules
@@ -17,7 +25,7 @@ from . import report  # noqa: F401
 from . import kmatrix  # noqa: F401
 
 # Core classes
-from .model.synapse import SynapsePoint, SynapsePopulation, prepare_ampa_synapses  # noqa: F401
+from .model.synapse import SynapsePoint, SynapsePopulation  # noqa: F401
 from .model.gj import GapJunctionPoint  # noqa: F401
 from .model import TSModel, TSRecipe  # noqa: F401
 from .simulation import (
@@ -41,7 +49,6 @@ from .geometry import (
 # Path utilities
 from .paths import (
     PathConfig,
-    UM_PER_PX,
     get_data_path,
     get_mesh_path,
     get_skeleton_path,
@@ -81,7 +88,6 @@ __all__ = [
     "make_icx_parameter_bank",
     "TSSimulator",
     # Preparation functions
-    "prepare_ampa_synapses",
     "prepare_gap_junctions",
     # Geometry utilities
     "scale_one_radius_in_segment_tree_by_coordinates",
@@ -98,7 +104,6 @@ __all__ = [
     "get_swc_path",
     "get_pointset_path",
     "get_simulation_path",
-    "UM_PER_PX",
     # General utilities
     "load_xyz_points",
     "equal_vectors",

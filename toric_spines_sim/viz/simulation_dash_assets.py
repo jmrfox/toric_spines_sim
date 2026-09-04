@@ -155,6 +155,26 @@ function(frameIdx, bundle, traceMap) {
         }
         return el.querySelector('.js-plotly-plot') || el;
     }
+    function liveSceneCamera(gd) {
+        const scene = gd._fullLayout && gd._fullLayout.scene;
+        const obj = scene && scene._scene;
+        if (obj && typeof obj.getCamera === 'function') {
+            const cam = obj.getCamera();
+            if (cam && cam.eye) {
+                const proj = (scene.camera && scene.camera.projection
+                    && scene.camera.projection.type) || 'perspective';
+                return {
+                    eye: {x: +cam.eye.x, y: +cam.eye.y, z: +cam.eye.z},
+                    center: {
+                        x: +cam.center.x, y: +cam.center.y, z: +cam.center.z
+                    },
+                    up: {x: +cam.up.x, y: +cam.up.y, z: +cam.up.z},
+                    projection: {type: proj}
+                };
+            }
+        }
+        return null;
+    }
     if (!bundle || frameIdx === undefined || frameIdx === null) {
         return dash_clientside.no_update;
     }
@@ -163,8 +183,20 @@ function(frameIdx, bundle, traceMap) {
     );
     const t = bundle.time_ms[idx];
 
+    function pinLiveCamera(gd) {
+        const cam = liveSceneCamera(gd);
+        if (!cam) { return; }
+        if (!gd.layout) { gd.layout = {}; }
+        if (!gd.layout.scene) { gd.layout.scene = {}; }
+        gd.layout.scene.camera = cam;
+        if (gd._fullLayout && gd._fullLayout.scene) {
+            gd._fullLayout.scene.camera = cam;
+        }
+    }
+
     const gd3d = plotlyDiv('graph-3d');
     if (gd3d) {
+        pinLiveCamera(gd3d);
         Plotly.restyle(gd3d, {
             intensity: [bundle.mesh_intensity[idx]]
         }, bundle.mesh_trace_idx);
@@ -190,10 +222,6 @@ function(frameIdx, bundle, traceMap) {
                 }, bundle.synapse_trace_idx);
             }
         }
-        Plotly.relayout(gd3d, {
-            'title.text': 't = ' + t.toFixed(1) + ' ms',
-            'datarevision': idx
-        });
     }
 
     const gdV = plotlyDiv('graph-voltage');
@@ -265,6 +293,69 @@ function(selected, traceMap) {
     }
     Plotly.restyle(gd, {visible: visibility}, traceIndices);
     return dash_clientside.no_update;
+}
+"""
+
+
+CLIENTSIDE_INSTALL_CAMERA_GUARD = """
+function(figuresReady) {
+    const NU = dash_clientside.no_update;
+    if (!figuresReady) { return NU; }
+
+    function plotlyDiv() {
+        const el = document.getElementById('graph-3d');
+        if (!el) { return null; }
+        if (el.classList && el.classList.contains('js-plotly-plot')) {
+            return el;
+        }
+        return el.querySelector('.js-plotly-plot');
+    }
+    function liveSceneCamera(gd) {
+        const scene = gd._fullLayout && gd._fullLayout.scene;
+        const obj = scene && scene._scene;
+        if (!(obj && typeof obj.getCamera === 'function')) { return null; }
+        const cam = obj.getCamera();
+        if (!(cam && cam.eye)) { return null; }
+        const proj = (scene.camera && scene.camera.projection
+            && scene.camera.projection.type) || 'perspective';
+        return {
+            eye: {x: +cam.eye.x, y: +cam.eye.y, z: +cam.eye.z},
+            center: {
+                x: +cam.center.x, y: +cam.center.y, z: +cam.center.z
+            },
+            up: {x: +cam.up.x, y: +cam.up.y, z: +cam.up.z},
+            projection: {type: proj}
+        };
+    }
+    function pinLiveCamera(gd) {
+        const cam = liveSceneCamera(gd);
+        if (!cam) { return; }
+        if (!gd.layout) { gd.layout = {}; }
+        if (!gd.layout.scene) { gd.layout.scene = {}; }
+        gd.layout.scene.camera = cam;
+        if (gd._fullLayout && gd._fullLayout.scene) {
+            gd._fullLayout.scene.camera = cam;
+        }
+    }
+    function attach(triesLeft) {
+        const gd = plotlyDiv();
+        if (!gd) {
+            if (triesLeft > 0) {
+                window.setTimeout(function() { attach(triesLeft - 1); }, 50);
+            }
+            return;
+        }
+        if (gd._tsCameraGuard) { return; }
+        gd._tsCameraGuard = true;
+        gd.addEventListener('pointerdown', function(ev) {
+            const target = ev.target;
+            if (target && target.closest && target.closest('.modebar-btn')) {
+                pinLiveCamera(gd);
+            }
+        }, true);
+    }
+    attach(40);
+    return true;
 }
 """
 

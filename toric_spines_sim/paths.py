@@ -1,12 +1,16 @@
-"""Path utilities for toric_spines_sim."""
+"""Path utilities for toric_spines_sim.
+
+Use these helpers instead of ``../../data/...``. Current morphologies are
+``data/swc/{pixels,microns}/TS{id}_wsink_r{R}um.swc`` (prefer **r10 µm** for
+experiments). Historical ``TS*_s50_*`` / ``TS*_s200_*`` names live under
+``archive/data/swc/``. Pixel and micron trees are the same geometry in
+different units; pass ``um_per_px`` at conversion time (typically 0.005).
+"""
 
 from pathlib import Path
 
 # Project root is two levels up from this file (toric_spines_sim/paths.py)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-# Reconstructs EM voxel size is 5 nm/pixel for every morphology in this project.
-UM_PER_PX = 5.0 / 1000.0
 
 # Data directories
 DATA_DIR = PROJECT_ROOT / "data"

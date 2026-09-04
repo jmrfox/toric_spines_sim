@@ -30,7 +30,6 @@ from toric_spines_sim.paths import (
     NFF_DIR,
     POINTSETS_PIXELS_DIR,
     SWC_PIXELS_DIR,
-    UM_PER_PX,
     get_pointset_path,
     get_swc_path,
 )
@@ -188,7 +187,7 @@ def write_synpts_microns(
     az_px: PathLike,
     synpts_um: Optional[PathLike] = None,
     *,
-    um_per_px: float = UM_PER_PX,
+    um_per_px: float,
 ) -> Path:
     """Project pixel AZ points onto the SWC, scale to microns, and write synpts."""
     swc_px = Path(swc_px)
@@ -257,7 +256,7 @@ def append_sink_write(
     radius_um: float = DEFAULT_SINK_RADIUS_UM,
     connector_length_um: float = DEFAULT_SINK_CONNECTOR_LENGTH_UM,
     n_cylinders: int = DEFAULT_SINK_N_CYLINDERS,
-    um_per_px: float = UM_PER_PX,
+    um_per_px: float,
     swc_out_px: Optional[PathLike] = None,
     swc_out_um: Optional[PathLike] = None,
     neck_out_um: Optional[PathLike] = None,
@@ -357,7 +356,7 @@ def append_sink_write_microns(
     radius_um: float = DEFAULT_SINK_RADIUS_UM,
     connector_length_um: float = DEFAULT_SINK_CONNECTOR_LENGTH_UM,
     n_cylinders: int = DEFAULT_SINK_N_CYLINDERS,
-    um_per_px: float = UM_PER_PX,
+    um_per_px: float,
     swc_out: Optional[PathLike] = None,
     neck_out: Optional[PathLike] = None,
     tag: int = DEFAULT_SINK_TAG,

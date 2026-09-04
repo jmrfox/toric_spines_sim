@@ -1,5 +1,14 @@
-"""
-Gap junction definitions and preparation utilities.
+"""Gap junction definitions and preparation utilities.
+
+SWC is a directed tree, so mesh cycles and extra necks are restored
+electrically: ``prepare_gap_junctions`` reads ``# CYCLE_BREAK reconnect i j``
+and ``# MULTI_NECK reconnect i j`` headers and returns one ``GapJunctionPoint``
+per pair. ``TSModel`` places the two junction labels at the Arbor locations
+of those SWC samples (not a shared XYZ closest-point), then ``TSRecipe``
+connects them.
+
+Colocated sample pairs are expected for cycle breaks; extra-neck pairs may
+sit at different coordinates. Both cases are valid.
 """
 
 from __future__ import annotations
@@ -10,36 +19,44 @@ logger = logging.getLogger(__name__)
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 from jscip import ParameterSet
 
-from toric_spines_sim.geometry.swc import parse_cycle_breaks, read_swc_points
-from toric_spines_sim.utils import equal_vectors
+from toric_spines_sim.geometry.swc import parse_reconnect_pairs, read_swc_points
 
 
 @dataclass
 class GapJunctionPoint:
+    """One electrical reconnect between two SWC samples.
+
+    Attributes
+    ----------
+    index_pair
+        SWC node IDs ``(i, j)`` to join.
+    location
+        XYZ of node ``i`` (µm or px, matching the SWC).
+    weight
+        Arbor gap-junction weight (dimensionless conductance scale).
+    location_b
+        XYZ of node ``j`` when it differs from ``i``; otherwise ``None``.
+    """
+
     index_pair: Tuple[int, int]
     location: Tuple[float, float, float]
     weight: float
+    location_b: Optional[Tuple[float, float, float]] = None
 
 
 def prepare_gap_junctions(
     swc_file: Path,
     parameters: ParameterSet,
 ):
-    """
-    Prepare gap junctions from an SWC file with reconnect annotations.
-    """
+    """Build gap junctions from CYCLE_BREAK and MULTI_NECK reconnect headers."""
     weight = parameters["gj_weight"]
-    reconnect_pairs = parse_cycle_breaks(
-        swc_file
-    )  # gives the list of indices of nodes that should be connected by gap junctions
+    reconnect_pairs = parse_reconnect_pairs(swc_file)
     gap_junctions = {}
-    points_by_id = read_swc_points(
-        swc_file
-    )  # gives the dict of node indices to their 3D locations
+    points_by_id = read_swc_points(swc_file)
     logger.debug(
         "Preparing gap junctions for %d reconnect pairs from %s, weight=%f",
         len(reconnect_pairs),
@@ -50,21 +67,20 @@ def prepare_gap_junctions(
         if i not in points_by_id or j not in points_by_id:
             logger.error("Node %s or %s not found in SWC file %s", i, j, swc_file)
             raise ValueError(f"Node {i} or {j} not found in SWC file")
-        xi, yi, zi, ri = points_by_id[i]
-        xj, yj, zj, rj = points_by_id[j]
-        if not equal_vectors((xi, yi, zi), (xj, yj, zj)):
-            logger.error(
-                "Nodes %s and %s have different locations: (%s,%s,%s) vs (%s,%s,%s)",
-                i,
-                j,
-                xi,
-                yi,
-                zi,
-                xj,
-                yj,
-                zj,
-            )
-            raise ValueError(f"Nodes {i} and {j} have different locations")
-        gap_junctions[f"gj_{n}"] = GapJunctionPoint((i, j), (xi, yi, zi), weight)
-    logger.debug("Prepared %d gap junctions from %s weight=%f", len(gap_junctions), swc_file, weight)
+        xi, yi, zi, _ri = points_by_id[i]
+        xj, yj, zj, _rj = points_by_id[j]
+        loc_a = (xi, yi, zi)
+        loc_b = (xj, yj, zj)
+        gap_junctions[f"gj_{n}"] = GapJunctionPoint(
+            (i, j),
+            loc_a,
+            weight,
+            location_b=None if loc_b == loc_a else loc_b,
+        )
+    logger.debug(
+        "Prepared %d gap junctions from %s weight=%f",
+        len(gap_junctions),
+        swc_file,
+        weight,
+    )
     return gap_junctions

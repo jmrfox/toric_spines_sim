@@ -77,6 +77,8 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb   
+# use jupytext sync to make notebooks from scripts and vice versa
 
 # IPython
 profile_default/
@@ -223,7 +225,7 @@ __marimo__/
 /toric_spines_sim/__pycache__
 
 # generated mesh skeletons (keep directory via .gitkeep)
-data/skeletons/*
+# data/skeletons/*
 !data/skeletons/.gitkeep
 
 # simulation results (generated)
@@ -236,3 +238,6 @@ simulations/**/hypergrid*
 
 # dash
 simulations/**/dash_cache/
+
+# dev
+TODO.md

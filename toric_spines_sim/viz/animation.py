@@ -477,7 +477,6 @@ def build_single_frame_figure(
         showlegend=False,
         scene=_default_scene(cache.show_axes),
         uirevision="dashboard-camera",
-        datarevision=frame_idx,
     )
     if autosize:
         layout_kwargs["autosize"] = True
@@ -537,7 +536,6 @@ def patch_3d_frame(
         )
     t_ms = float(cache.time_ms[frame_idx])
     patch["layout"]["title"]["text"] = f"t = {t_ms:.1f} ms"
-    patch["layout"]["datarevision"] = frame_idx
     return patch
 
 

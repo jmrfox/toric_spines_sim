@@ -28,6 +28,7 @@ from .animation import (
 )
 from .simulation_dash_assets import (
     CLIENTSIDE_FRAME_UPDATE,
+    CLIENTSIDE_INSTALL_CAMERA_GUARD,
     CLIENTSIDE_PAUSE_OR_RESET,
     CLIENTSIDE_PLAYBACK_TRANSPORT,
     CLIENTSIDE_PROBE_VISIBILITY,
@@ -869,6 +870,7 @@ def create_simulation_dash_app(
             dcc.Store(id="frame-idx", data=0),
             dcc.Store(id="playing", data=False),
             dcc.Store(id="figures-ready", data=False),
+            dcc.Store(id="camera-guard-ready", data=False),
             dcc.Store(id="theme-mode", data=theme_mode),
             dcc.Store(id="frame-bundle", data=playback.clientside_bundle),
             dcc.Store(
@@ -909,6 +911,13 @@ def create_simulation_dash_app(
             readout,
             True,
         )
+
+    clientside_callback(
+        CLIENTSIDE_INSTALL_CAMERA_GUARD,
+        Output("camera-guard-ready", "data"),
+        Input("figures-ready", "data"),
+        prevent_initial_call=True,
+    )
 
     if use_clientside:
         # Immediate pause/reset: disable the interval and stop playing

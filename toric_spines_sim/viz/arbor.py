@@ -58,7 +58,7 @@ Examples
 Geometry check:
     >>> import arbor as A
     >>> from toric_spines_sim import viz
-    >>> morph = A.load_swc("data/swc/TS2_s50.swc")
+    >>> morph = A.load_swc("data/swc/microns/TS2_wsink_r10um.swc")
     >>> terms = viz.terminals_from_morphology(morph)
     >>> ax = viz.plot_morph_and_locations(morph, terms)
 

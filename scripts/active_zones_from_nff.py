@@ -27,7 +27,7 @@ from toric_spines_sim.geometry.prepare import (
     nff_spine_stem,
     write_synpts_microns,
 )
-from toric_spines_sim.paths import NFF_DIR, SWC_PIXELS_DIR, UM_PER_PX
+from toric_spines_sim.paths import NFF_DIR, SWC_PIXELS_DIR
 from toric_spines_sim.utils import read_nff_s_points
 
 logger = logging.getLogger(__name__)
@@ -43,8 +43,8 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--um-per-px",
         type=float,
-        default=UM_PER_PX,
-        help=f"Microns per pixel (default: {UM_PER_PX:g})",
+        default=0.005,
+        help="Microns per pixel (5 nm/pixel; default: 0.005)",
     )
     parser.add_argument(
         "--verbose",

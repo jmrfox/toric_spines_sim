@@ -1,4 +1,20 @@
-"""Simulation parameter bank utilities."""
+"""Simulation parameter bank utilities.
+
+``make_default_parameter_bank()`` is the generic bank; ``make_icx_parameter_bank()``
+is the same layout with an ICx-like leak. Per-spine experiments can override a
+few ``.value`` s in ``simulations/ts{id}/params.py``.
+
+Conventions
+-----------
+- Time in ms; temperature in Kelvin (in vitro ~280 K; barn owl in vivo ~313 K).
+- ``cm_uF_per_cm2`` membrane capacitance; ``rL_ohm_cm`` axial resistivity;
+  ``pas_leak_g_S_per_cm2`` leak (Arbor default 0.001 S/cm²).
+- SWC tags: spine=3, sink cylinder=5, sink tip=6.
+- ``hh_tags`` is a list of tags to paint Hodgkin–Huxley. The bank default is an
+  empty vector (shape ``(0,)``), so assign tags on the **sampled**
+  ``ParameterSet``: ``parameters["hh_tags"] = [5]``. Empty + ``hh_scale=0``
+  keeps the cell passive.
+"""
 
 import pandas as pd
 import numpy as np

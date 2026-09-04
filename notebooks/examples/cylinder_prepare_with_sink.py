@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.3
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: .venv
 #     language: python
@@ -19,18 +19,25 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 from pathlib import Path
+
 from toric_spines_sim.geometry.sink import SinkGeometry, append_sink_to_swc
+from toric_spines_sim.paths import get_pointset_path, get_swc_path
 from swctools import SWCModel, plot_model, PointSet, FrustaSet
+
+# %% [markdown]
+# Canonical example: append a cylindrical sink to ``cylinder.swc``.
+#
+# For toric-spine SWCs prefer ``uv run python scripts/append_sink.py TS1``.
 
 # %%
 sink_radius_um = 20
 
-swc_spine_um_filepath = Path("../data/swc/microns/cylinder.swc")
-neckpt_um_filepath = Path("../data/pointsets/microns/cylinder_neckpoint.txt")
-swc_with_sink_um_filepath = Path(
-    f"../data/swc/microns/cylinder_wsink_r{sink_radius_um}um.swc"
+swc_spine_um_filepath = get_swc_path("cylinder.swc", units="microns")
+neckpt_um_filepath = get_pointset_path("cylinder_neckpoint.txt", units="microns")
+swc_with_sink_um_filepath = get_swc_path(
+    f"cylinder_wsink_r{sink_radius_um}um.swc", units="microns"
 )
-synpts_um_filepath = Path("../data/pointsets/microns/cylinder_synpts.txt")
+synpts_um_filepath = get_pointset_path("cylinder_synpts.txt", units="microns")
 
 swc_spine_um = SWCModel.from_swc_file(swc_spine_um_filepath)
 spine_frusta_um = FrustaSet.from_swc_model(swc_spine_um, sides=20, end_caps=False)

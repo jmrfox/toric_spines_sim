@@ -34,10 +34,10 @@ class TSSimulator:
 
     Example:
         >>> from toric_spines_sim.simulation import TSSimulator
-        >>> from toric_spines_sim.simulation import make_simulator_parameter_bank
+        >>> from toric_spines_sim.simulation import make_default_parameter_bank
         >>> from toric_spines_sim.events import StochasticEventGenerator, FlatRateCurve
         >>>
-        >>> pb = make_simulator_parameter_bank()
+        >>> pb = make_default_parameter_bank()
         >>> parameters = pb.sample()
         >>> events = StochasticEventGenerator(
         ...     rate_curves=[FlatRateCurve(rate_hz=50.0)],
@@ -46,8 +46,8 @@ class TSSimulator:
         ...     seed=int(parameters["seed"]),
         ... ).generate()
         >>> sim = TSSimulator(
-        ...     "data/swc/TS1.swc",
-        ...     "data/pointsets/TS1_synpts.txt",
+        ...     "data/swc/microns/TS1_wsink_r10um.swc",
+        ...     "data/pointsets/microns/TS1_synpts.txt",
         ...     events,
         ...     parameters,
         ... )

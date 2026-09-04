@@ -34,7 +34,6 @@ from toric_spines_sim.geometry.prepare import (
     append_sink_write,
     resolve_swc_targets,
 )
-from toric_spines_sim.paths import UM_PER_PX
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +87,8 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--um-per-px",
         type=float,
-        default=UM_PER_PX,
-        help=f"Microns per pixel (default: {UM_PER_PX:g})",
+        default=0.005,
+        help="Microns per pixel (5 nm/pixel; default: 0.005)",
     )
     parser.add_argument(
         "--verbose",

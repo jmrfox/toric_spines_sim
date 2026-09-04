@@ -14,6 +14,9 @@
 # ---
 
 # %% [markdown]
+# Exploratory pypet + Arbor demo — **not a supported experiment**.
+
+# %% [markdown]
 # # pypet + Arbor demo
 #
 # This notebook demonstrates how to use the [`pypet`](https://pypet.readthedocs.io/) parameter exploration toolkit

@@ -22,7 +22,7 @@ class TSRecipe(A.recipe):
     Parameters
     ----------
     cell : A.cable_cell
-        The cell constructed from `TSMorphology.build_cell(...)`.
+        The cell constructed from ``TSModel.build_cell()``.
     events : TsGroup | Dict[str, List[float]] | None
         Optional TsGroup or dict mapping synapse labels to event times (ms).
         TsGroup is preferred; dict is supported for backward compatibility.

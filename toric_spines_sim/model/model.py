@@ -1,4 +1,10 @@
-"""Morphology specification and cell building for toric spine models."""
+"""Morphology specification and cell building for toric spine models.
+
+``TSModel`` loads an SWC (typically ``TS*_wsink_r*um.swc``), paints passive
+leak (and optional HH), and places synapses, gap junctions, and voltage
+probes. Gap junctions restore SWC cycle-breaks and extra necks: each pair of
+SWC node IDs is mapped to distinct Arbor locations on the segment tree.
+"""
 
 from __future__ import annotations
 
@@ -19,6 +25,7 @@ from toric_spines_sim.geometry.rescale import (
     scale_one_radius_in_segment_tree_by_coordinates,
 )
 from toric_spines_sim.geometry.sink import neck_point_from_swc_file
+from toric_spines_sim.geometry.swc import arbor_locations_for_swc_nodes
 from toric_spines_sim.utils import join_tags_dsl
 from .synapse import SynapsePoint
 from .gj import GapJunctionPoint
@@ -60,7 +67,14 @@ class TSModel:
         cell : A.cable_cell
             The fully constructed cell with placements.
         """
-        # Load pre-built custom mechanism catalogue (ampasyn, nmdasyn, hh, ...)
+        # Load pre-built custom mechanism catalogue (ampasyn, nmdasyn, hhnotemp, ...)
+        if not CUSTOM_CATALOGUE_PATH.is_file():
+            raise FileNotFoundError(
+                f"Custom mechanism catalogue not found at {CUSTOM_CATALOGUE_PATH}. "
+                "Build it from the repository root with:\n"
+                "  uv run bash scripts/make_custom_catalogue.sh\n"
+                "or on Windows: scripts\\make_custom_catalogue.bat"
+            )
         logger.info("Loading custom catalogue from %s", CUSTOM_CATALOGUE_PATH)
         custom_catalogue = A.load_catalogue(str(CUSTOM_CATALOGUE_PATH))
         
@@ -180,32 +194,48 @@ class TSModel:
         else:
             logger.info("No synapses provided.")
 
-        # Make gap junction connections from input dict (connect index pairs)
+        # Restore cycles / extra necks: place two junction labels on the
+        # distinct SWC samples named by index_pair (not a shared closest XYZ).
         if self.gap_junctions:
+            node_ids = []
+            for gj in self.gap_junctions.values():
+                node_ids.extend(gj.index_pair)
+            node_locations = arbor_locations_for_swc_nodes(
+                self.swc_path, morphology, segment_tree, node_ids
+            )
             logger.debug("Placing %d gap junctions", len(self.gap_junctions))
             for gj_label, gj in self.gap_junctions.items():
-                # i, j = gj.index_pair
+                node_i, node_j = gj.index_pair
                 gj_label_a = f"{gj_label}_a"
                 gj_label_b = f"{gj_label}_b"
-                location_i, _ = piecewise_placer.closest(
-                    float(gj.location[0]), float(gj.location[1]), float(gj.location[2])
-                )
-                location_j, _ = piecewise_placer.closest(
-                    float(gj.location[0]), float(gj.location[1]), float(gj.location[2])
-                )
+                location_i = node_locations[node_i]
+                location_j = node_locations[node_j]
                 location_expr_i = f"(location {location_i.branch} {location_i.pos:.6f})"
                 location_expr_j = f"(location {location_j.branch} {location_j.pos:.6f})"
+                if (
+                    location_i.branch == location_j.branch
+                    and abs(location_i.pos - location_j.pos) < 1e-9
+                ):
+                    logger.warning(
+                        "Gap junction %s maps both SWC nodes %s and %s to %s; "
+                        "the connection may be electrically inert",
+                        gj_label,
+                        node_i,
+                        node_j,
+                        location_expr_i,
+                    )
                 decor.place(location_expr_i, A.junction("gj"), gj_label_a)
                 decor.place(location_expr_j, A.junction("gj"), gj_label_b)
                 label_map[gj_label_a] = location_expr_i
                 label_map[gj_label_b] = location_expr_j
                 label_map[gj_label] = location_expr_i
                 logger.debug(
-                    "Placed gap junction %s at %s (a/b labels: %s, %s)",
+                    "Placed gap junction %s at %s / %s (SWC nodes %s, %s)",
                     gj_label,
                     location_expr_i,
-                    gj_label_a,
-                    gj_label_b,
+                    location_expr_j,
+                    node_i,
+                    node_j,
                 )
         else:
             logger.info("No gap junctions provided.")

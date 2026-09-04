@@ -13,8 +13,11 @@ from .graph import (
 )
 from .swc import (
     parse_cycle_breaks,
+    parse_multi_neck_reconnects,
+    parse_reconnect_pairs,
     read_swc_points,
     get_center_coordinates_for_all_segments,
+    arbor_locations_for_swc_nodes,
 )
 from .sink import (
     SinkGeometry,
@@ -79,8 +82,11 @@ __all__ = [
     "map_probes_to_nodes",
     "map_xyz_to_nearest_probes",
     "parse_cycle_breaks",
+    "parse_multi_neck_reconnects",
+    "parse_reconnect_pairs",
     "read_swc_points",
     "get_center_coordinates_for_all_segments",
+    "arbor_locations_for_swc_nodes",
     "SinkGeometry",
     "sink_endpoint_location_from_swc_file",
     "neck_point_from_swc_file",

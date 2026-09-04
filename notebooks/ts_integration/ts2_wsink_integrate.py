@@ -13,6 +13,12 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# Canonical TS2 integration notebook (k-matrix / sink voltage).
+#
+# Inputs: ``TS2_wsink_r10um.swc``, ``TS2_synpts.txt`` (microns).
+# Scripted PDF path: ``uv run python -m simulations.ts2.ts2_integration``.
+
 # %%
 import logging
 from datetime import datetime
@@ -20,19 +26,19 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# from pathlib import Path
-# import arbor as A
-# import numpy as np
-
 from toric_spines_sim.report import PdfReport
-from toric_spines_sim.viz import RasterPlotter
+from toric_spines_sim.viz import RasterPlotter, TimeSeriesPlotter
+from toric_spines_sim.viz import plot_morphology_frusta_3d, VizConfig
 from toric_spines_sim.events import StochasticEventGenerator, FlatRateCurve
 import matplotlib.pyplot as plt
 from toric_spines_sim.paths import get_swc_path, get_pointset_path, get_simulation_path
 from toric_spines_sim.utils import load_xyz_points
-from toric_spines_sim import make_simulator_parameter_bank
-from toric_spines_sim.kmatrix import simulation
+from toric_spines_sim.simulation import make_default_parameter_bank
+from toric_spines_sim.kmatrix import simulation_probe_dict as simulation
+from toric_spines_sim.geometry.sink import sink_endpoint_location_from_swc_file
 from jscip import ParameterBank
+from typing import Tuple
+import numpy as np
 
 # %% [markdown]
 # # Integration study of TS2
@@ -40,19 +46,22 @@ from jscip import ParameterBank
 # First, we set up a function to do the simulation for a given set of input rates and parameters.
 
 # %%
-report_name = "TS1_integration_passive"
-report_filepath = get_simulation_path("ts1", f"{report_name}.pdf")
+report_name = "TS2_integration_passive"
+report_filepath = get_simulation_path("ts2", f"{report_name}.pdf")
 # if report exists with same name, add timestamp
 if report_filepath.exists():
     report_name += "_" + datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_filepath = get_simulation_path("ts1", f"{report_name}.pdf")
+    report_filepath = get_simulation_path("ts2", f"{report_name}.pdf")
 
-swc_filepath = get_swc_path("TS1_s200_wsink_r20um.swc", units="microns")
-synpts_filepath = get_pointset_path("TS1_synpts.txt", units="microns")
-results_filepath = get_simulation_path("ts1", "results/TS1_sim_results.pkl")
+swc_filepath = get_swc_path("TS2_wsink_r10um.swc", units="microns")
+synpts_filepath = get_pointset_path("TS2_synpts.txt", units="microns")
+results_filepath = get_simulation_path("ts2", "results/TS2_sim_results.pkl")
 n_synapses = len(load_xyz_points(synpts_filepath))
+total_synapses = n_synapses
+model_name = "ts2"
+sink_endpoint = sink_endpoint_location_from_swc_file(swc_filepath)
 
-parameter_bank = make_simulator_parameter_bank()
+parameter_bank = make_default_parameter_bank()
 parameter_bank["T_ms"].value = 500.0
 parameter_bank["delay_ms"].value = 20.0
 parameter_bank["discretization_um"].value = 1.0
@@ -68,14 +77,7 @@ parameter_bank["rL_ohm_cm"].value = 150
 hh_on = False
 hh_scale = 1.0
 parameter_bank["hh_leak_e_mV"].value = -54.3
-if hh_on:
-    parameter_bank["K_gbar_S_per_cm2"].value = 0.036 * hh_scale  # hh value = 0.036
-    parameter_bank["Na_gbar_S_per_cm2"].value = 0.12 * hh_scale  # hh value = 0.12
-    parameter_bank["hh_leak_g_S_per_cm2"].value = 0.0003 * hh_scale  # hh value = 0.0003
-else:
-    parameter_bank["K_gbar_S_per_cm2"].value = 0.0
-    parameter_bank["Na_gbar_S_per_cm2"].value = 0.0
-    parameter_bank["hh_leak_g_S_per_cm2"].value = 0.0
+parameter_bank["hh_scale"].value = hh_scale if hh_on else 0.0
 # passive leak
 # Arbor's "default" leak conductance = 0.001 S/cm^2
 leak_on = True
@@ -87,21 +89,22 @@ else:
 parameter_bank["ampa_gmax_uS"].value = 0.1
 parameter_bank["ampa_tau_ms"].value = 2.0
 integration_parameters = parameter_bank.sample()
+integration_parameters["hh_tags"] = [5] if hh_on else []
 
-# Create events (stepped rates: one independent generator per rate step per synapse)
+# Create events (one independent Poisson process per synapse, cycling rates)
 rate_steps_hz = [5.0, 10.0, 20.0, 50.0]
-curves = [FlatRateCurve(r) for r in rate_steps_hz] * n_synapses
+curves = [FlatRateCurve(rate_steps_hz[i % len(rate_steps_hz)]) for i in range(n_synapses)]
 events_generator = StochasticEventGenerator(
     rate_curves=curves,
-    n_synapses_per_axon=[1] * len(curves),
+    n_synapses_per_axon=[1] * n_synapses,
     T_ms=integration_parameters["T_ms"],
     delay_ms=integration_parameters["delay_ms"],
-    seed=integration_parameters["seed"],
+    seed=int(integration_parameters["seed"]),
 )
 events_tsgroup = events_generator.generate()
 
 # %%
-parameter_bank = make_simulator_parameter_bank()
+parameter_bank = make_default_parameter_bank()
 parameter_bank["T_ms"].value = 1000.0
 parameter_bank["discretization_um"].value = 1.0
 parameter_bank["sink_radii_scale"].value = 1.0
@@ -113,14 +116,7 @@ parameter_bank["rL_ohm_cm"].value = 150
 hh_on = False
 hh_scale = 0.05
 parameter_bank["hh_leak_e_mV"].value = -54.3
-if hh_on:
-    parameter_bank["K_gbar_S_per_cm2"].value = 0.036 * hh_scale  # hh value = 0.036
-    parameter_bank["Na_gbar_S_per_cm2"].value = 0.12 * hh_scale  # hh value = 0.12
-    parameter_bank["hh_leak_g_S_per_cm2"].value = 0.0003
-else:
-    parameter_bank["K_gbar_S_per_cm2"].value = 0.0
-    parameter_bank["Na_gbar_S_per_cm2"].value = 0.0
-    parameter_bank["hh_leak_g_S_per_cm2"].value = 0.0
+parameter_bank["hh_scale"].value = hh_scale if hh_on else 0.0
 # passive leak
 leak_on = True
 if leak_on:
@@ -133,6 +129,7 @@ else:
 parameter_bank["ampa_gmax_uS"].value = 0.1
 parameter_bank["ampa_tau_ms"].value = 2.0
 parameters = parameter_bank.sample()
+parameters["hh_tags"] = [5] if hh_on else []
 
 print("Parameter set:\n", parameters)
 

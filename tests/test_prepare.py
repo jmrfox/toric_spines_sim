@@ -18,13 +18,11 @@ from toric_spines_sim.geometry.prepare import (
     write_synpts_microns,
 )
 from toric_spines_sim.geometry.swc import parse_cycle_breaks, read_swc_points
-from toric_spines_sim.paths import SWC_PIXELS_DIR, UM_PER_PX
+from toric_spines_sim.paths import SWC_PIXELS_DIR
 from toric_spines_sim.utils import load_xyz_points, read_nff_s_points
 
-
-class TestUmPerPx:
-    def test_project_conversion_factor(self):
-        assert UM_PER_PX == pytest.approx(5.0 / 1000.0)
+# 5 nm/pixel, passed explicitly at each conversion (not a library constant).
+um_per_px = 0.005
 
 
 class TestSwcTargets:
@@ -67,13 +65,13 @@ class TestConvertNff:
 class TestScaleSwc:
     def test_scales_coords_and_preserves_cycle_breaks(self, sample_swc_file, temp_dir):
         out = temp_dir / "scaled.swc"
-        scale_swc_file(sample_swc_file, out, UM_PER_PX)
+        scale_swc_file(sample_swc_file, out, um_per_px)
         pts_in = read_swc_points(sample_swc_file)
         pts_out = read_swc_points(out)
         assert set(pts_in) == set(pts_out)
         nid = next(iter(pts_in))
         for a, b in zip(pts_in[nid][:4], pts_out[nid][:4]):
-            assert b == pytest.approx(a * UM_PER_PX)
+            assert b == pytest.approx(a * um_per_px)
         assert parse_cycle_breaks(out) == parse_cycle_breaks(sample_swc_file)
 
 
@@ -82,12 +80,12 @@ class TestSynptsAndSink:
         self, sample_swc_file, sample_synpts_file, temp_dir
     ):
         out = temp_dir / "synpts.txt"
-        write_synpts_microns(sample_swc_file, sample_synpts_file, out, um_per_px=UM_PER_PX)
+        write_synpts_microns(sample_swc_file, sample_synpts_file, out, um_per_px=um_per_px)
         pts = np.loadtxt(out)
         assert pts.ndim == 2 and pts.shape[1] == 3
-        # Input AZ are O(1) px; output must be O(UM_PER_PX) microns.
-        assert pts[:, 0].max() < 4.0 * UM_PER_PX + 1e-3
-        assert np.all(np.abs(pts) < 4.0 * UM_PER_PX + 1e-3)
+        # Input AZ are O(1) px; output must be O(um_per_px) microns.
+        assert pts[:, 0].max() < 4.0 * um_per_px + 1e-3
+        assert np.all(np.abs(pts) < 4.0 * um_per_px + 1e-3)
 
     def test_append_sink_writes_micron_geometry(self, sample_swc_file, temp_dir):
         neck = temp_dir / "neck.txt"
@@ -101,7 +99,7 @@ class TestSynptsAndSink:
             radius_um=10.0,
             connector_length_um=5.0,
             n_cylinders=5,
-            um_per_px=UM_PER_PX,
+            um_per_px=um_per_px,
             swc_out=swc_out,
             swc_out_px=swc_out_px,
             neck_out=neck_out,
@@ -114,16 +112,16 @@ class TestSynptsAndSink:
         assert "last_segment_tag=6" in header
         pts = read_swc_points(swc_out)
         # Original node 1 was at (0,0,0) r=1; in microns r=0.005.
-        assert pts[1][3] == pytest.approx(UM_PER_PX)
+        assert pts[1][3] == pytest.approx(um_per_px)
         # Sink nodes use radius 10 µm (much larger than scaled spine radii).
         sink_radii = [r for (_x, _y, _z, r) in pts.values() if r > 1.0]
         assert sink_radii
         assert all(r == pytest.approx(10.0) for r in sink_radii)
-        # Pixel SWC sink radius is 10 / UM_PER_PX.
+        # Pixel SWC sink radius is 10 / um_per_px.
         pts_px = read_swc_points(swc_out_px)
         sink_radii_px = [r for (_x, _y, _z, r) in pts_px.values() if r > 100.0]
         assert sink_radii_px
-        assert all(r == pytest.approx(10.0 / UM_PER_PX) for r in sink_radii_px)
+        assert all(r == pytest.approx(10.0 / um_per_px) for r in sink_radii_px)
         neck_um = load_xyz_points(neck_out)
         assert neck_um[0] == pytest.approx((0.0, 0.0, 0.0))
         assert parse_cycle_breaks(swc_out) == parse_cycle_breaks(sample_swc_file)
@@ -139,6 +137,7 @@ class TestSynptsAndSink:
             sample_swc_file,
             neck_file=neck,
             radius_um=10.0,
+            um_per_px=um_per_px,
             swc_out_px=px_out,
             swc_out_um=um_out,
             neck_out_um=temp_dir / "neck_um.txt",
@@ -159,6 +158,7 @@ class TestSynptsAndSink:
         append_sink_write_microns(
             sample_swc_file,
             radius_um=2.0,
+            um_per_px=um_per_px,
             swc_out=swc_out,
             neck_out=neck_out,
         )
