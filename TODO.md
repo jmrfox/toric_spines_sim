@@ -123,9 +123,9 @@ Prefer improving **README sections, module/docstring clarity, logging, and examp
 
 | Item | Decision | Date |
 |------|----------|------|
-| `ts2_sim.py` | keep / rewrite / archive / delete | |
-| `simulations/ts1/original/` | keep / archive / delete | |
-| `simulations/ts3`, `ts4` | keep placeholders / delete | |
-| `outputs/outdated/` | keep / remove from repo | |
-| Deprecated synapse helpers | remove now / remove after call-site migration | |
-| Doc tooling deps (Sphinx/pdoc/…) | keep / drop | |
+| `ts2_sim.py` | archive | 2026-09-04 |
+| `simulations/ts1/original/` | archive | 2026-09-04 |
+| `simulations/ts3`, `ts4` | archive (were empty) | 2026-09-04 |
+| `outputs/outdated/` | archive | 2026-09-04 |
+| Deprecated synapse helpers | dropped from public `__init__`; wrappers remain in `model/synapse.py` | 2026-09-04 |
+| Doc tooling deps (Sphinx/pdoc/…) | drop | 2026-09-04 |
