@@ -64,7 +64,7 @@ Open `notebooks/examples/params_demo` and `events_demo`, then a morphology noteb
 
 Canonical scripted experiment: `uv run python -m simulations.ts1.axons` (or `ts2`, `ts3`, …). See [simulations/README.md](simulations/README.md). Tests: `uv run pytest`.
 
-Mesh skeletonization / SWC fitting are optional (`uv sync --extra mesh`; see [Morphology pipeline](#morphology-pipeline)).
+Mesh skeletonization / SWC fitting use pymcfs and mascaf (installed with `uv sync`; see [Morphology pipeline](#morphology-pipeline)).
 
 ## Project layout
 
@@ -114,11 +114,7 @@ To add a spine, drop `TS{id}.obj` in `data/mesh/` (and optionally `TS{id}_AZ.nff
 
 ## Morphology pipeline
 
-Skeletonization and SWC fitting need the optional mesh extra ([pymcfs](https://github.com/jmrfox/pymcfs), [mascaf](https://github.com/jmrfox/mascaf)):
-
-```bash
-uv sync --extra mesh
-```
+Skeletonization and SWC fitting use [pymcfs](https://github.com/jmrfox/pymcfs) and [mascaf](https://github.com/jmrfox/mascaf), installed with `uv sync`.
 
 CHOLMOD is not required for pymcfs. On Linux or macOS it can speed up **large**-mesh skeletonization:
 

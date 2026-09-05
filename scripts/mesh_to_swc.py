@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """CLI for mesh → skeleton (pymcfs) → SWC (mascaf).
 
-Requires the optional mesh extra::
-
-    uv sync --extra mesh
+Requires pymcfs and mascaf (``uv sync``).
 
 Examples::
 

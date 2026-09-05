@@ -19,7 +19,6 @@
 # Run skeletonization first:
 #
 # ```bash
-# uv sync --extra mesh
 # uv run python scripts/skeletonize_meshes.py --all
 # ```
 #

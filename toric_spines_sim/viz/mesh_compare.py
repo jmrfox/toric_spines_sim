@@ -55,7 +55,7 @@ def _load_trimesh(mesh_path: PathLike):
     except ImportError as exc:  # pragma: no cover
         raise ImportError(
             "trimesh is required for mesh comparison figures "
-            "(install with `uv sync --extra mesh`)."
+            "(install with `uv sync`)."
         ) from exc
 
     loaded = trimesh.load(str(mesh_path), force="mesh")

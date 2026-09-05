@@ -19,7 +19,6 @@
 # After skeletons exist, fit SWCs:
 #
 # ```bash
-# uv sync --extra mesh
 # uv run python scripts/fit_swc.py --all
 # ```
 #

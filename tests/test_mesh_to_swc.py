@@ -188,7 +188,7 @@ class TestMeshToSwcOrchestration:
             return real_import(name, *args, **kwargs)
 
         monkeypatch.setattr(builtins, "__import__", fake_import)
-        with pytest.raises(ImportError, match="uv sync --extra mesh"):
+        with pytest.raises(ImportError, match="uv sync"):
             m._require_pymcfs()
 
 

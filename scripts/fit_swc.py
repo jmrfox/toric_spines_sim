@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """Fit SWC cable models from mesh + skeleton with mascaf.
 
-Requires existing polylines (see ``scripts/skeletonize_meshes.py``) and the
-optional mesh extra::
-
-    uv sync --extra mesh
+Requires existing polylines (see ``scripts/skeletonize_meshes.py``) and mascaf
+(``uv sync``).
 
 Examples::
 

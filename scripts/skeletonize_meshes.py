@@ -3,9 +3,7 @@
 
 Uses the same defaults as pymcfs ``toric_spines/scripts/batch_ts_skeletonize.py``:
 ``profile=\"auto\"``, ``branching=\"sparse\"``, tip extension on, 500 iters,
-300s timeout. Requires the optional mesh extra::
-
-    uv sync --extra mesh
+300s timeout. Requires pymcfs (``uv sync``).
 
 Examples::
 

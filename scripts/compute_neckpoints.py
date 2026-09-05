@@ -4,9 +4,7 @@
 Compares each isolated ``TS*.obj`` to ``cell_wrapped_simplified.obj`` and writes
 pixel-space neckpoints to ``data/pointsets/pixels/<stem>_neckpoint.txt``.
 
-Requires the optional mesh extra (trimesh)::
-
-    uv sync --extra mesh
+Requires trimesh (``uv sync``).
 
 Examples::
 

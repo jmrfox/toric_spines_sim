@@ -5,9 +5,9 @@ there (the spine opens into dendrite cytosol). Cap faces disagree with the cell
 surface (anti-aligned normals and/or deep negative signed distance). Their
 area-weighted centroids are the neckpoints used for sink attachment.
 
-Requires ``trimesh`` (optional ``mesh`` extra)::
+Requires ``trimesh``::
 
-    uv sync --extra mesh
+    uv sync
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ PathLike = Union[str, Path]
 
 _TRIMESH_HINT = (
     "trimesh is required for neckpoint computation "
-    "(install with `uv sync --extra mesh`)."
+    "(install with `uv sync`)."
 )
 
 

@@ -1,9 +1,5 @@
 """Mesh → skeleton → SWC orchestration using pymcfs and mascaf.
 
-Requires the optional ``mesh`` extra::
-
-    uv sync --extra mesh
-
 CHOLMOD is optional: on Linux or macOS it can speed up large-mesh
 skeletonization (``sudo apt install libsuitesparse-dev`` or
 ``brew install suite-sparse``).
@@ -28,8 +24,7 @@ from toric_spines_sim.paths import (
 logger = logging.getLogger(__name__)
 
 _MESH_EXTRA_HINT = (
-    "Mesh pipeline dependencies are missing. Install with: "
-    "`uv sync --extra mesh`."
+    "Mesh pipeline dependencies are missing. Install with: `uv sync`."
 )
 
 PathLike = Union[str, Path]
