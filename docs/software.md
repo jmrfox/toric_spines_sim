@@ -36,7 +36,7 @@ If you truly need conda-forge packages alongside PyPI, [Pixi](https://pixi.prefi
 | **[pymcfs](https://github.com/jmrfox/pymcfs)** | Python mean-curvature flow skeletonization (MCFS). **This is the supported skeletonizer** (`scripts/skeletonize_meshes.py`) |
 | **[swctools](https://github.com/jmrfox/swctools)** | SWC I/O and morphology helpers used by mascaf and the simulator |
 | **[jscip](https://github.com/jmrfox/jscip)** | Parameter banks (sampling, derived quantities, constraints). Used heavily; you do not need to extend it to run sims |
-| **[neurosignature](https://github.com/jmrfox/neurosignature)** | Optional. Multi-channel event-in / voltage-out descriptors for comparing morphologies |
+| **[neurosignature](https://github.com/jmrfox/neurosignature)** | Optional. Descriptors for multi-channel event-in / multi-channel signal-out systems. Design: [Neurosignature](neurosignature.md) |
 
 mascaf’s GitHub `main` branch still contains extra toric-spine research scripts; `release` is the installable package this repo uses.
 

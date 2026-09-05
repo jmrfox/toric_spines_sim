@@ -77,7 +77,7 @@ TS21 and TS24 have sink SWCs but no `TS*_synpts.txt`, so they are not wired up y
 |------|------|
 | `simulations/ts{id}/axons.py` (ts1, ts2, ts3, ts4, ts48, ts67, ts76) | Axon PDF study (`python -m simulations.ts{id}.axons`) |
 | `ts{id}/axons_dash.py`, `axons_animation.py` | Dash dashboard and HTML voltage animation |
-| `ts1/neurosignature/ts1_neurosignature.py` | Neurosignature descriptor pipeline (`uv sync --group neurosignature`) |
+| `ts1/neurosignature/ts1_neurosignature.py` | Neurosignature descriptor pipeline (`uv sync --group neurosignature`; [design](neurosignature.md)) |
 | `ts1/hypergrid/ts1_hypergrid.py` | TS1 HyperGrid parameter sweep |
 | `ts2/ts2_integration.py` | TS2 Poisson integration + PDF |
 | `ts2/ts2_integration_viz.py` | TS2 HTML frusta animation |

@@ -15,7 +15,7 @@ An isolated toric-spine mesh is not a whole neuron. The working model is:
 
 Sanculi et al. reconstructed 76 toric spines on Type I SSNs (Type II cells have ordinary spines). Individual toric spines can collect many active zones from many axons, while remaining unconnected to most nearby axons — a candidate locus of integration and learning.
 
-A parallel comparison morphology — a synthetic dendrite with classical neck+head spines — lives in `toric_spines_sim.geometry.dendrite` (see `notebooks/examples/spiny_dendrite_demo`). The optional [neurosignature](https://github.com/jmrfox/neurosignature) extra compares multi-channel input/output dynamics across morphologies. A full “SSN whole-cell” reconstruction pipeline is **not** in this repo; work here is isolated spines plus a sink.
+A parallel comparison morphology — a synthetic dendrite with classical neck+head spines — lives in `toric_spines_sim.geometry.dendrite` (see `notebooks/examples/spiny_dendrite_demo`). [Neurosignature](neurosignature.md) compares systems by descriptors of input–output dynamics rather than by geometry. A full “SSN whole-cell” reconstruction pipeline is **not** in this repo; work here is isolated spines plus a sink.
 
 ## Pipeline
 
@@ -44,5 +44,6 @@ High-level path in code: mesh → skeleton → SWC (`# CYCLE_BREAK` / `# MULTI_N
 - [Skeletons](skeletons.md) — MCFS, pymcfs vs CGALLab, parameterization
 - [Morphology pipeline](morphology.md) — the commands used for spines in `data/`
 - [Simulations](simulations.md) — per-spine axon studies
+- [Neurosignature](neurosignature.md) — functional descriptors (event-in / signal-out systems)
 - [Glossary](glossary.md) — SWC, cable model, genus, MorphologyGraph
 - [Package tour](package.md) and [API](api/index.md) — the Python library

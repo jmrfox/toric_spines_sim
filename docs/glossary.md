@@ -23,3 +23,5 @@
 **Active zone (AZ) / synpts.** Synapse coordinates. NFF exports from IMOD become `TS{id}_AZ.txt`; projected, micron-scaled sites used in simulation are `TS{id}_synpts.txt`.
 
 **SSN.** Space-specific neuron in barn-owl ICx (external nucleus of the inferior colliculus) — the cell class that bears toric spines.
+
+**Neurosignature.** Framework that embeds a multi-channel event-in / multi-channel signal-out operator \(F\) in a descriptor space \(\mathcal{Z}\) under an input ensemble \(\theta\). The current \(W\) compares internal activity to a downstream output (residuals, residual energy, transfer efficiency); users can add descriptors. See [Neurosignature](neurosignature.md).

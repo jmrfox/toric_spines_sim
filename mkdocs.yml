@@ -45,6 +45,8 @@ plugins:
 markdown_extensions:
   - admonition
   - attr_list
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.details
   - pymdownx.superfences:
       custom_fences:
@@ -58,6 +60,10 @@ markdown_extensions:
   - toc:
       permalink: true
 
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
 nav:
   - Overview: index.md
   - Getting started: getting-started.md
@@ -69,6 +75,7 @@ nav:
       - Skeletons: skeletons.md
       - Data layout: layout.md
   - Simulations: simulations.md
+  - Neurosignature: neurosignature.md
   - Package tour: package.md
   - API:
       - Overview: api/index.md
