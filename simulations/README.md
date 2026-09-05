@@ -1,5 +1,7 @@
 # Simulations
 
+Full guide: [https://jmrfox.github.io/toric_spines_sim/simulations/](https://jmrfox.github.io/toric_spines_sim/simulations/).
+
 Run from the repository root as modules. Shared axon analysis lives in
 [`common/`](common/); each spine has thin files you can edit
 (`params.py`, `inputs.py`) plus runners.
@@ -55,7 +57,7 @@ TS21 and TS24 have sink SWCs but no `TS*_synpts.txt`, so they are not wired up y
 |------|------|
 | [ts1/axons.py](ts1/axons.py) (and ts2, ts3, ts4, ts48, ts67, ts76) | Axon PDF study (`python -m simulations.ts{id}.axons`) |
 | `ts{id}/axons_dash.py`, `axons_animation.py` | Dash dashboard and HTML voltage animation |
-| [ts1/neurosignature/ts1_neurosignature.py](ts1/neurosignature/ts1_neurosignature.py) | Neurosignature descriptor pipeline |
+| [ts1/neurosignature/ts1_neurosignature.py](ts1/neurosignature/ts1_neurosignature.py) | Neurosignature descriptor pipeline (`uv sync --group neurosignature`) |
 | [ts1/hypergrid/ts1_hypergrid.py](ts1/hypergrid/ts1_hypergrid.py) | TS1 HyperGrid parameter sweep |
 | [ts2/ts2_integration.py](ts2/ts2_integration.py) | TS2 Poisson integration + PDF |
 | [ts2/ts2_integration_viz.py](ts2/ts2_integration_viz.py) | TS2 HTML frusta animation |

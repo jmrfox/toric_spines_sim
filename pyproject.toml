@@ -8,24 +8,18 @@ dependencies = [
     "arbor>=0.11.0",
     "dill>=0.4.1",
     "ipykernel>=6.30.1",
-    "ipython>=9.5.0",
     "jscip",
     "jupyter>=1.1.1",
-    "jupyter-server>=2.17.0",
     "kaleido>=1.2.0",
     "matplotlib>=3.10.6",
     "numpy>=2.3.3",
     "pandas>=2.3.3",
     "plotly>=6.3.0",
     "pynapple",
-    "pytest>=8.0.0",
-    "pyside6>=6.10.1",
     "reportlab>=4.4.4",
     "scipy>=1.16.3",
-    "svgwrite>=1.4.3",
     "swctools",
     "tqdm>=4.67.1",
-    "neurosignature",
     "dash>=4.1.0",
     "pymcfs",
     # mascaf's package __init__ imports visualization (needs pyvista from viz extra)
@@ -44,12 +38,19 @@ packages = ["toric_spines_sim"]
 jscip = { git = "https://github.com/jmrfox/jscip.git" }
 swctools = { git = "https://github.com/jmrfox/swctools.git" }
 neurosignature = { git = "https://github.com/jmrfox/neurosignature.git" }
-apidump = { git = "https://github.com/jmrfox/apidump.git" }
 pymcfs = { git = "https://github.com/jmrfox/pymcfs.git", branch = "release" }
 mascaf = { git = "https://github.com/jmrfox/mascaf.git", branch = "release" }
 
 [dependency-groups]
 dev = [
-    "apidump",
     "jupytext>=1.19.3",
+    "pytest>=8.0.0",
+]
+neurosignature = [
+    "neurosignature",
+]
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.6",
+    "mkdocstrings[python]>=0.30",
 ]

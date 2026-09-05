@@ -7,10 +7,11 @@ Inputs
 
 Run from the repository root::
 
+    uv sync --group neurosignature
     uv run python -m simulations.ts1.neurosignature.ts1_neurosignature
 
 Success: descriptor matrices and figures under ``simulations/ts1/results/``.
-Requires the private ``neurosignature`` git dependency.
+Requires the ``neurosignature`` extra: ``uv sync --group neurosignature``.
 """
 
 import logging

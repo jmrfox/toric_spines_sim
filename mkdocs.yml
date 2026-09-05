@@ -1,0 +1,73 @@
+site_name: toric_spines_sim
+site_description: Arbor simulations of barn-owl toric spines (Sanculi et al., 2020)
+site_url: https://jmrfox.github.io/toric_spines_sim/
+repo_url: https://github.com/jmrfox/toric_spines_sim
+repo_name: jmrfox/toric_spines_sim
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            merge_init_into_class: true
+            members_order: source
+            show_root_heading: true
+            show_source: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            filters:
+              - "!^_"
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Layout: layout.md
+  - Morphology pipeline: morphology.md
+  - Simulations: simulations.md
+  - Package tour: package.md
+  - API:
+      - Overview: api/index.md
+      - geometry: api/geometry.md
+      - model: api/model.md
+      - simulation: api/simulation.md
+      - events: api/events.md
+      - viz: api/viz.md
+      - paths: api/paths.md
+      - kmatrix: api/kmatrix.md
+      - report: api/report.md
+      - utils: api/utils.md
