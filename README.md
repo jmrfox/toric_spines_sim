@@ -8,18 +8,63 @@ High-level path: mesh → skeleton → SWC (`# CYCLE_BREAK` / `# MULTI_NECK`) �
 
 ## Getting started
 
-1. Install [uv](https://docs.astral.sh/uv/) if needed, clone the repo, then `uv sync` (needs git access to `swctools`, `jscip`, and `neurosignature`).
-2. Build custom NMODL mechanisms (once, and again after editing `.mod` files):
+You need **git**, **Python 3.12+**, and **[uv](https://docs.astral.sh/uv/)**. Clone and `uv sync` need GitHub access to the private packages `swctools`, `jscip`, and `neurosignature`. Without `swctools` you cannot load SWCs; without `jscip` you cannot build parameter banks; without `neurosignature` only the TS1 neurosignature script fails.
+
+`uv sync` installs a binary [Arbor](https://docs.arbor-sim.org/en/latest/install/python.html) wheel (`arbor>=0.11.0`). `import arbor` can succeed while simulations still fail until you build the **local NMODL catalogue**. That step compiles `toric_spines_sim/mechanisms/my_catalogue/*.mod` to C++ (`modcc` + CMake + `make`) and writes `toric_spines_sim/mechanisms/custom-catalogue.so` (gitignored). The `.so` is specific to OS, compiler, and Arbor version — do not copy one machine’s catalogue onto another. Rebuild after changing `.mod` files, upgrading Arbor, or changing OS/compiler.
+
+### Linux
 
 ```bash
-uv run bash scripts/make_custom_catalogue.sh
+sudo apt install git cmake g++ python3-dev make
+# Fedora/RHEL: sudo dnf install git cmake gcc-c++ python3-devel make
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-3. Open `notebooks/examples/params_demo` and `events_demo`, then a morphology notebook (`view_wsink_swcs`) and an integration notebook (`ts1_wsink_sim` or `cylinder_wsink_integrate`).
-4. Canonical scripted experiment: `uv run python -m simulations.ts1.axons` (or `ts2`, `ts3`, …). See [simulations/README.md](simulations/README.md).
-5. Tests: `uv run pytest`
+```bash
+git clone <repository-url>
+cd toric_spines_sim
+uv sync
+uv run bash scripts/make_custom_catalogue.sh
+uv run python -c "import arbor as A; A.print_config()"
+```
 
-Private git dependencies: without `swctools` you cannot load SWCs; without `jscip` you cannot build parameter banks; without `neurosignature` only the TS1 neurosignature script fails. Mesh skeletonization / SWC fitting need `uv sync --extra mesh` (below).
+### macOS
+
+Xcode Command Line Tools provide `clang`, `make`, and the SDK. Homebrew provides CMake (Apple does not ship it):
+
+```bash
+xcode-select --install
+brew install cmake
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then the same clone / `uv sync` / catalogue commands as Linux. `uv sync` succeeding is **not** enough: `arbor-build-catalogue` compiles generated C++ with the **system** `c++` because pip wheels often omit `arbor.config()['CXX']` ([arbor PR 2051](https://github.com/arbor-sim/arbor/pull/2051)).
+
+**Known failure:** the venv is fine, but `arbor-build-catalogue` dies in `make` with a syntax error in **generated** C++ (not in the `.mod` files). That almost always means a broken or mismatched toolchain — missing CLT after a macOS upgrade, Homebrew GCC mixed with Apple headers, or `make` still the CLT stub. Do not edit the generated C++.
+
+1. Reinstall CLT and select them: `sudo xcode-select -s /Library/Developer/CommandLineTools`
+2. Confirm `cmake`, `make`, and `c++` exist (`which cmake make c++`). `c++ --version` should be Apple clang ≥ 15 (Arbor’s documented minimum).
+3. Rebuild verbose with an explicit compiler:
+
+```bash
+cd toric_spines_sim/mechanisms
+uv run arbor-build-catalogue custom my_catalogue -v --cxx "$(xcrun --find c++)"
+```
+
+4. Do not compile the catalogue with Homebrew `g++` unless Arbor itself was built with that same compiler.
+5. After a macOS or Arbor upgrade, delete `custom-catalogue.so` and rebuild.
+
+### Windows
+
+Arbor does not ship native Windows wheels. Use **[WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)** with Ubuntu, install the Linux packages above, and clone **inside** the Linux filesystem (`~/...`, not `/mnt/c/...`). Authenticate to GitHub from the WSL shell, then follow the Linux steps. Native `scripts/make_custom_catalogue.bat` is not the supported path.
+
+### First run
+
+Open `notebooks/examples/params_demo` and `events_demo`, then a morphology notebook (`view_wsink_swcs`) and an integration notebook (`ts1_wsink_sim` or `cylinder_wsink_integrate`). Pair `.py` sources with notebooks via jupytext (`uv run jupytext --to notebook path/*.py` if the `.ipynb` is missing).
+
+Canonical scripted experiment: `uv run python -m simulations.ts1.axons` (or `ts2`, `ts3`, …). See [simulations/README.md](simulations/README.md). Tests: `uv run pytest`.
+
+Mesh skeletonization / SWC fitting are optional (`uv sync --extra mesh`; see [Morphology pipeline](#morphology-pipeline)).
 
 ## Project layout
 
@@ -72,10 +117,16 @@ To add a spine, drop `TS{id}.obj` in `data/mesh/` (and optionally `TS{id}_AZ.nff
 Skeletonization and SWC fitting need the optional mesh extra ([pymcfs](https://github.com/jmrfox/pymcfs), [mascaf](https://github.com/jmrfox/mascaf)):
 
 ```bash
-# system dependency for pymcfs CHOLMOD (Linux/WSL)
-sudo apt install libsuitesparse-dev
-
 uv sync --extra mesh
+```
+
+CHOLMOD is not required for pymcfs. On Linux or macOS it can speed up **large**-mesh skeletonization:
+
+```bash
+# Linux / WSL
+sudo apt install libsuitesparse-dev
+# macOS
+brew install suite-sparse
 ```
 
 You can process one stem (`TS1.obj`) or every `TS*.obj` (`--all`). Review notebooks live under `notebooks/ts_morphology/`.

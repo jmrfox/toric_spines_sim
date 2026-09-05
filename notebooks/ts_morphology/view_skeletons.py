@@ -19,7 +19,6 @@
 # Run skeletonization first:
 #
 # ```bash
-# sudo apt install libsuitesparse-dev   # once, Linux/WSL
 # uv sync --extra mesh
 # uv run python scripts/skeletonize_meshes.py --all
 # ```

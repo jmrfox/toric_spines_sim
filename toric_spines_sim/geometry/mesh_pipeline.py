@@ -4,9 +4,9 @@ Requires the optional ``mesh`` extra::
 
     uv sync --extra mesh
 
-On Linux/WSL, CHOLMOD also needs::
-
-    sudo apt install libsuitesparse-dev
+CHOLMOD is optional: on Linux or macOS it can speed up large-mesh
+skeletonization (``sudo apt install libsuitesparse-dev`` or
+``brew install suite-sparse``).
 """
 
 from __future__ import annotations
@@ -29,8 +29,7 @@ logger = logging.getLogger(__name__)
 
 _MESH_EXTRA_HINT = (
     "Mesh pipeline dependencies are missing. Install with: "
-    "`uv sync --extra mesh` "
-    "(on Linux/WSL also: `sudo apt install libsuitesparse-dev`)."
+    "`uv sync --extra mesh`."
 )
 
 PathLike = Union[str, Path]

@@ -38,7 +38,7 @@ packages = ["toric_spines_sim"]
 
 [project.optional-dependencies]
 mesh = [
-    "pymcfs[cholmod]",
+    "pymcfs",
     # mascaf's package __init__ imports visualization (needs pyvista from viz extra)
     "mascaf[viz]",
     "trimesh>=4.0.0",

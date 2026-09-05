@@ -71,9 +71,8 @@ class TSModel:
         if not CUSTOM_CATALOGUE_PATH.is_file():
             raise FileNotFoundError(
                 f"Custom mechanism catalogue not found at {CUSTOM_CATALOGUE_PATH}. "
-                "Build it from the repository root with:\n"
-                "  uv run bash scripts/make_custom_catalogue.sh\n"
-                "or on Windows: scripts\\make_custom_catalogue.bat"
+                "Build it from the repository root (see README Getting started):\n"
+                "  uv run bash scripts/make_custom_catalogue.sh"
             )
         logger.info("Loading custom catalogue from %s", CUSTOM_CATALOGUE_PATH)
         custom_catalogue = A.load_catalogue(str(CUSTOM_CATALOGUE_PATH))
