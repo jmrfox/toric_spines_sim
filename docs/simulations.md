@@ -1,5 +1,7 @@
 # Simulations
 
+With a micron sink SWC and synpts in hand, instantiate the Arbor cell (`TSModel` / `TSRecipe`), restore loops with gap junctions at `# CYCLE_BREAK` / `# MULTI_NECK` sites, generate synaptic event streams, and record voltages.
+
 Each spine with synpts has a package under `simulations/`. Shared analysis lives in `simulations/common/`; you normally edit only the per-spine files.
 
 Run from the repository root as modules.

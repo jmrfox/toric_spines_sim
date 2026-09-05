@@ -1,5 +1,7 @@
 # Getting started
 
+Install this repo and run a first simulation. For the surrounding packages, OS notes, and Dash vs Jupyter: [Software](software.md). For what the project is asking scientifically: [Overview](index.md).
+
 You need **git**, **Python 3.12+**, and **[uv](https://docs.astral.sh/uv/)**. `uv sync` clones the GitHub packages `swctools` and `jscip` (and `pymcfs` / `mascaf` for the mesh pipeline). Without `swctools` you cannot load SWCs; without `jscip` you cannot build parameter banks.
 
 The TS1 neurosignature pipeline is optional. Install it with `uv sync --group neurosignature`.

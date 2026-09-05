@@ -44,4 +44,4 @@ Put **new model files** in `data/` using the `TS{id}` stem (e.g. `TS1`, `TS48`).
 
 Blessed experiment morphologies are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Older `TS*_s50_*` / `TS*_s200_*` names live under `archive/data/swc/`.
 
-To add a spine, drop `TS{id}.obj` in `data/mesh/` (and optionally `TS{id}_AZ.nff` in `data/nff/`), then run the [morphology pipeline](morphology.md). Existing meshes: TS1, TS2, TS3, TS4, TS21, TS24, TS48, TS67, TS76.
+To add a spine, drop `TS{id}.obj` in `data/mesh/` (and optionally `TS{id}_AZ.nff` in `data/nff/`), then run the [morphology pipeline](morphology.md). From IMOD: [From IMOD to mesh](reconstruction.md). Existing meshes: TS1, TS2, TS3, TS4, TS21, TS24, TS48, TS67, TS76.

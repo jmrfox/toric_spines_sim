@@ -44,8 +44,13 @@ plugins:
 
 markdown_extensions:
   - admonition
+  - attr_list
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
@@ -54,10 +59,15 @@ markdown_extensions:
       permalink: true
 
 nav:
-  - Home: index.md
+  - Overview: index.md
   - Getting started: getting-started.md
-  - Layout: layout.md
-  - Morphology pipeline: morphology.md
+  - Software: software.md
+  - Glossary: glossary.md
+  - Morphology:
+      - Pipeline: morphology.md
+      - From IMOD to mesh: reconstruction.md
+      - Skeletons: skeletons.md
+      - Data layout: layout.md
   - Simulations: simulations.md
   - Package tour: package.md
   - API:

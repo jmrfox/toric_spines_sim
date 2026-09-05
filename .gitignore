@@ -241,4 +241,5 @@ simulations/**/dash_cache/
 
 # dev
 TODO.md
+.temp
 archive/

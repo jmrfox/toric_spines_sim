@@ -6,7 +6,7 @@ Work in this repo is: turn an EM mesh into a cable (SWC) model, attach a cylindr
 
 High-level path: mesh → skeleton → SWC (`# CYCLE_BREAK` / `# MULTI_NECK`) → sink → `TSModel` / `TSRecipe` → event generators → `TSSimulator.run()` → traces, k-matrix, Dash / PDF.
 
-**Documentation:** [https://jmrfox.github.io/toric_spines_sim/](https://jmrfox.github.io/toric_spines_sim/)
+**Documentation** (project overview, reconstruction, skeletons, simulations, API): [https://jmrfox.github.io/toric_spines_sim/](https://jmrfox.github.io/toric_spines_sim/)
 
 ## Install
 

@@ -10,7 +10,7 @@ The library lives in `toric_spines_sim/`. Full signatures and docstrings are in 
 - [`kmatrix.py`](api/kmatrix.md), [`report.py`](api/report.md) — pairwise integration analysis / PDF reporting
 - [`paths.py`](api/paths.md) — repo-root data paths (`get_swc_path`, …)
 
-Temperature is Kelvin (in vitro ~280 K; barn owl in vivo ~313 K). Capacitance is µF/cm²; leak is S/cm²; axial resistivity is Ω·cm.
+Temperature is Kelvin (in vitro ~280 K; barn owl in vivo ~313 K). Capacitance is µF/cm²; leak is S/cm²; axial resistivity is Ω·cm. See [Software](software.md#biophysics-notes) for Sanculi-derived defaults.
 
 ## Path helpers
 

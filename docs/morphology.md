@@ -1,5 +1,7 @@
 # Morphology pipeline
 
+Commands used for spines already in `data/`, from closed OBJ to a simulation-ready sink SWC. If you are starting from IMOD, convert the surface and AZs first ([From IMOD to mesh](reconstruction.md)). Skeletonization details and the CGALLab alternative: [Skeletons](skeletons.md).
+
 Skeletonization and SWC fitting use [pymcfs](https://github.com/jmrfox/pymcfs) and [mascaf](https://github.com/jmrfox/mascaf), installed with `uv sync`.
 
 CHOLMOD is not required for pymcfs. On Linux or macOS it can speed up **large**-mesh skeletonization:
@@ -19,7 +21,7 @@ Place closed TS meshes at `data/mesh/TS{id}.obj`. Keep the cell mesh at `data/me
 
 ## 2. Skeletonize
 
-Mean-curvature flow → `data/skeletons/TS{id}.polylines.txt`. Defaults match pymcfs `profile="auto"`, `branching="sparse"`, tip extension on, 500 iterations, 300s timeout.
+Mean-curvature flow via **pymcfs** → `data/skeletons/TS{id}.polylines.txt`. Defaults match pymcfs `profile="auto"`, `branching="sparse"`, tip extension on, 500 iterations, 300s timeout. This is the supported path; CGALLab is optional for interactive work.
 
 ```bash
 uv run python scripts/skeletonize_meshes.py TS1.obj
@@ -30,7 +32,11 @@ Review mesh vs skeleton in `notebooks/ts_morphology/view_skeletons`.
 
 ## 3. Fit SWC cables
 
-mascaf fit → `data/swc/pixels/TS{id}.swc`. SWC is a tree, so cycle-forming node pairs are stored as `# CYCLE_BREAK` (and `# MULTI_NECK` when needed) comments.
+mascaf fit → `data/swc/pixels/TS{id}.swc`. SWC is a tree, so cycle-forming node pairs are stored as `# CYCLE_BREAK` (and `# MULTI_NECK` when needed) comments. Those directives are read when building the Arbor model so loops become gap junctions.
+
+`FitOptions.max_edge_length` (MEL) is the maximum MorphologyGraph edge length in mesh coordinates. Larger MEL → coarser compartments. This repo sets MEL to a fraction of the mesh bounding-box diagonal (`--max-edge-length-frac`, default 0.08) so spines of different sizes share a relative resolution. Prefer the largest MEL that still matches mesh structure, volume, and surface area. `--basis-optimize` runs mascaf’s basis refinement before radius fitting.
+
+![mascaf fit: mesh + skeleton → MorphologyGraph → radii → SWC](assets/mascaf-fit-pipeline.png)
 
 ```bash
 uv run python scripts/fit_swc.py TS1.obj
