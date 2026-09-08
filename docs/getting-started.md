@@ -6,7 +6,7 @@ You need **git**, **Python 3.12+**, and **[uv](https://docs.astral.sh/uv/)**. `u
 
 The TS1 neurosignature pipeline is optional. Install it with `uv sync --group neurosignature`.
 
-`uv sync` installs a binary [Arbor](https://docs.arbor-sim.org/en/latest/install/python.html) wheel (`arbor>=0.11.0`). `import arbor` can succeed while simulations still fail until you build the **local NMODL catalogue**. That step compiles `toric_spines_sim/mechanisms/my_catalogue/*.mod` to C++ (`modcc` + CMake + `make`) and writes `toric_spines_sim/mechanisms/custom-catalogue.so` (gitignored). The `.so` is specific to OS, compiler, and Arbor version — do not copy one machine’s catalogue onto another. Rebuild after changing `.mod` files, upgrading Arbor, or changing OS/compiler.
+`uv sync` installs a binary [Arbor](https://docs.arbor-sim.org/en/latest/install/python.html) wheel (`arbor>=0.11.0`). `import arbor` can succeed while simulations still fail until you build the **local NMODL catalogue**. That step compiles `toric_spines_sim/mechanisms/my_catalogue/*.mod` to C++ (`modcc` + CMake + `make`) and writes `toric_spines_sim/mechanisms/custom-catalogue.so` (not tracked by git). The `.so` is specific to OS, compiler, and Arbor version — do not copy one machine’s catalogue onto another. Rebuild after changing `.mod` files, upgrading Arbor, or changing OS/compiler.
 
 ## Linux
 
@@ -56,9 +56,9 @@ Arbor does not ship native Windows wheels. Use **[WSL2](https://learn.microsoft.
 
 ## First run
 
-Open `notebooks/examples/params_demo` and `events_demo`, then a morphology notebook (`view_wsink_swcs`) and an integration notebook (`ts1_wsink_sim` or `cylinder_wsink_integrate`). Pair `.py` sources with notebooks via jupytext (`uv run jupytext --to notebook path/*.py` if the `.ipynb` is missing).
+Work through `notebooks/tutorial/` in order (`01_meshes` … `19_spiny_dendrite`). Pair `.py` sources with notebooks via jupytext (`uv run jupytext --sync notebooks/tutorial/*.py`). Notebooks 11–16 need the NMODL catalogue. Extra demos (including a raw Arbor primer) live under `notebooks/misc/`. All-spine morphology galleries use `SHOW_ALL = True` in the morphology notebooks.
 
-Canonical scripted experiment: `uv run python -m simulations.ts1.axons` (or `ts2`, `ts3`, …). See [Simulations](simulations.md). Tests: `uv run pytest`.
+Full axon PDF study: `uv run python -m simulations.ts1.axons` (or `ts2`, `ts3`, …). See [Simulations](simulations.md). Tests: `uv run pytest`.
 
 Mesh skeletonization / SWC fitting use pymcfs and mascaf (installed with `uv sync`; see [Morphology pipeline](morphology.md)).
 

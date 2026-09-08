@@ -31,6 +31,24 @@ class TestSinkEndpointLocationFromSwcFile:
         except Exception as e:
             pytest.skip(f"Skipping due to missing dependency or invalid test data: {e}")
 
+    def test_missing_sink_header_raises(self, temp_dir):
+        swc_content = """# Just a comment
+1 1 0.0 0.0 0.0 1.0 -1
+"""
+        path = temp_dir / "no_sink.swc"
+        path.write_text(swc_content)
+        with pytest.raises(ValueError, match="No # SINK:"):
+            sink_endpoint_location_from_swc_file(str(path))
+
+    def test_missing_end_field_raises(self, temp_dir):
+        swc_content = """# SINK: start=1, axis=x
+1 1 0.0 0.0 0.0 1.0 -1
+"""
+        path = temp_dir / "no_end.swc"
+        path.write_text(swc_content)
+        with pytest.raises(ValueError, match="No end="):
+            sink_endpoint_location_from_swc_file(str(path))
+
 
 class TestNeckPointFromSwcFile:
     """Test suite for neck_point_from_swc_file function."""
@@ -59,7 +77,7 @@ class TestNeckPointFromSwcFile:
 """
         path = temp_dir / "no_sink.swc"
         path.write_text(swc_content)
-        with pytest.raises(ValueError, match="No neck_xyz found"):
+        with pytest.raises(ValueError, match="No # SINK:"):
             neck_point_from_swc_file(path)
 
 

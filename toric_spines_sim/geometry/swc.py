@@ -10,7 +10,7 @@ electrically via header annotations (not extra SWC edges):
 - ``# MULTI_NECK reconnect i j`` — extra neck attached to a copy of the sink
   start node (see ``geometry.sink``). These samples may or may not share XYZ.
 
-Blessed files live under ``data/swc/{pixels,microns}/`` as
+Precomputed files live under ``data/swc/{pixels,microns}/`` as
 ``TS{id}_wsink_r{R}um.swc``. Historical names are under ``archive/``.
 """
 
@@ -206,6 +206,33 @@ def arbor_locations_for_swc_nodes(
     order. The distal end of segment *k* is the *k*-th non-root sample. Using
     this mapping (not ``place_pwlin.closest`` on XYZ) keeps colocated cycle-break
     / multi-neck copies on different branches.
+
+    Parameters
+    ----------
+    swc_path : path-like
+        SWC used to build ``segment_tree``.
+    morphology : arbor.morphology
+        Morphology corresponding to ``segment_tree``.
+    segment_tree : arbor.segment_tree
+        Tree produced by ``arbor.load_swc_arbor``.
+    node_ids : iterable of int
+        SWC sample IDs to map.
+
+    Returns
+    -------
+    dict[int, arbor.location]
+        Distal ``(branch, pos)`` for each requested sample.
+
+    Raises
+    ------
+    ValueError
+        If sample/segment counts disagree or a node ID is missing.
+
+    Examples
+    --------
+    >>> locs = arbor_locations_for_swc_nodes(path, morph, tree, [12, 13])  # doctest: +SKIP
+    >>> locs[12].branch != locs[13].branch  # colocated CYCLE_BREAK copies
+    True
     """
     wanted = set(int(i) for i in node_ids)
     samples = iter_swc_samples(swc_path)

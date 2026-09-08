@@ -44,7 +44,7 @@ Prefer improving **README sections, module/docstring clarity, logging, and examp
 - [ ] Audit `simulations/ts1/original/` vs current `ts1_*.py` / axons / neurosignature / hypergrid flows. Label clearly in README or remove if fully superseded
 - [ ] Decide fate of empty `simulations/ts3/` and `simulations/ts4/` (placeholder for future work vs delete until needed)
 - [ ] Triage `outputs/outdated/` and large PDF/pickle artifacts under `simulations/ts2/` — keep only what is needed for reproducibility; move the rest out of the working tree or document why they stay
-- [ ] Triage `data/swc/**/old`, `hold`, `raw` (and any duplicate pixel/micron `*_wsink_*` files): document the “blessed” morphologies or relocate archives
+- [ ] Triage `data/swc/**/old`, `hold`, `raw` (and any duplicate pixel/micron `*_wsink_*` files): document the precomputed morphologies already in `data/` or relocate archives
 - [ ] Remove or finish deprecation of `prepare_ampa_synapses` / `prepare_nmda_synapses` in `model/synapse.py` (already marked deprecated in favor of `SynapsePopulation.from_file`); update call sites and `__init__` exports
 
 ### Duplication and drift

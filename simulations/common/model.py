@@ -28,13 +28,13 @@ def default_calculations() -> dict[str, bool]:
 
 @dataclass
 class ModelConfig:
-    """Paths, parameter bank, and analysis knobs for one spine model.
+    """Paths, parameter bank, and analysis options for one spine model.
 
     Users typically construct this in a per-model ``inputs.py``. Report
     defaults match the original TS1 axon study; override fields there.
     """
 
-    stem: str
+    spine_id: str
     sim_key: str
     swc_name: str
     synpts_name: str

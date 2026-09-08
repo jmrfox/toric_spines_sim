@@ -26,59 +26,142 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def sink_endpoint_location_from_swc_file(filepath: str) -> Tuple[float, float, float]:
+def _parse_sink_header_fields(filepath: Union[str, Path]) -> dict[str, str]:
+    """Parse ``# SINK: key=value, ...`` fields from an SWC header.
+
+    Parameters
+    ----------
+    filepath : path-like
+        SWC file written by ``append_sink_to_swc*``.
+
+    Returns
+    -------
+    dict[str, str]
+        Field names mapped to stripped string values.
+
+    Raises
+    ------
+    ValueError
+        If no ``# SINK:`` header is found.
     """
-    Read sink endpoint location from swc file.
-    header line format : "# SINK: start=15, end=22, ... "
-    """
-    # read endpoint index
-    with open(filepath, "r") as f:
+    path = Path(filepath)
+    with path.open("r") as f:
         for line in f:
             if line.startswith("# SINK:"):
-                specs = line.split(",")
-                for spec in specs:
+                header_text = line[len("# SINK:") :].strip()
+                fields: dict[str, str] = {}
+                for spec in header_text.split(","):
                     spec = spec.strip()
-                    if spec.startswith("end="):
-                        end_idx = int(spec.split("=")[1].strip())
-    # get location
+                    if not spec or "=" not in spec:
+                        continue
+                    key, value = spec.split("=", 1)
+                    fields[key.strip()] = value.strip()
+                return fields
+    raise ValueError(f"No # SINK: header found in {filepath}")
+
+
+def sink_endpoint_location_from_swc_file(
+    filepath: Union[str, Path],
+) -> Tuple[float, float, float]:
+    """Return XYZ of the distal sink sample referenced by ``end=`` in the header.
+
+    Expects a header line of the form::
+
+        # SINK: start=15, end=22, ...
+
+    Parameters
+    ----------
+    filepath : path-like
+        SWC file with a ``# SINK:`` header.
+
+    Returns
+    -------
+    tuple of float
+        ``(x, y, z)`` of the node whose id is ``end``.
+
+    Raises
+    ------
+    ValueError
+        If the ``# SINK:`` header or ``end=`` field is missing.
+
+    Examples
+    --------
+    >>> xyz = sink_endpoint_location_from_swc_file("TS1_wsink_r10um.swc")
+    >>> len(xyz)
+    3
+    """
+    fields = _parse_sink_header_fields(filepath)
+    if "end" not in fields:
+        raise ValueError(f"No end= field in SINK header of {filepath}")
+    end_idx = int(fields["end"])
+
     from swctools import SWCModel
 
     swc_model = SWCModel.from_swc_file(filepath)
-    end_xyz = (
+    return (
         swc_model.nodes[end_idx]["x"],
         swc_model.nodes[end_idx]["y"],
         swc_model.nodes[end_idx]["z"],
     )
-    return end_xyz
 
 
 def neck_point_from_swc_file(filepath: Union[str, Path]) -> Tuple[float, float, float]:
     """Read the neck point coordinates from the SINK header in an SWC file.
 
-    Expects a header line of the form:
-        ``# SINK: ..., neck_xyz=<x> <y> <z>``
+    Expects a header line of the form::
 
-    Returns (x, y, z).
+        # SINK: ..., neck_xyz=<x> <y> <z>
 
-    Raises ValueError if no SINK header or neck_xyz field is found.
+    Parameters
+    ----------
+    filepath : path-like
+        SWC file with a ``# SINK:`` header.
+
+    Returns
+    -------
+    tuple of float
+        ``(x, y, z)`` of the neck attachment.
+
+    Raises
+    ------
+    ValueError
+        If no ``# SINK:`` header or ``neck_xyz`` field is found.
+
+    Examples
+    --------
+    >>> xyz = neck_point_from_swc_file("TS1_wsink_r10um.swc")
+    >>> xyz  # doctest: +SKIP
+    (12.3, 4.5, 6.7)
     """
-    with open(filepath, "r") as f:
-        for line in f:
-            if line.startswith("# SINK:"):
-                for spec in line.split(","):
-                    spec = spec.strip()
-                    if spec.startswith("neck_xyz="):
-                        parts = spec.split("=", 1)[1].strip().split()
-                        if len(parts) < 3:
-                            raise ValueError(
-                                f"neck_xyz field has fewer than 3 values: {spec}"
-                            )
-                        return (float(parts[0]), float(parts[1]), float(parts[2]))
-    raise ValueError(f"No neck_xyz found in SINK header of {filepath}")
+    fields = _parse_sink_header_fields(filepath)
+    if "neck_xyz" not in fields:
+        raise ValueError(f"No neck_xyz found in SINK header of {filepath}")
+    parts = fields["neck_xyz"].split()
+    if len(parts) < 3:
+        raise ValueError(
+            f"neck_xyz field has fewer than 3 values: {fields['neck_xyz']}"
+        )
+    return (float(parts[0]), float(parts[1]), float(parts[2]))
 
 
 @dataclass
 class SinkGeometry:
+    """Straight cylindrical sink (tag 5 body, optional tip tag).
+
+    Attributes
+    ----------
+    radius : float
+        Cylinder radius in the same units as the SWC.
+    length : float
+        Axial length of the sink (excluding ``connector_length``).
+    n_cylinders : int
+        Number of frusta along the axis.
+    connector_length : float
+        Short segment from the snapped neck node to the first sink node.
+    axis : str or sequence of float
+        ``'x'``/``'y'``/``'z'`` (optional leading ``-``) or a 3-vector.
+    """
+
     radius: float = 0.5
     length: float = 100.0
     n_cylinders: int = 1
@@ -316,16 +399,35 @@ def append_sink_to_swc(
     tag: int = 5,
     last_segment_tag: Optional[int] = None,
 ) -> Path:
-    """
-    Append a simple cylindrical sink geometry as a separate tree to an SWC file.
+    """Append a cylindrical sink as a new tree and write ``# SINK:`` metadata.
 
-    - The sink starts at `neck_point` and extends along `geom.axis` by `geom.length`.
-    - Creates `geom.n_cylinders + 1` nodes that define `geom.n_cylinders` cylindrical frusta of radius `geom.radius`.
-    - A connector frustum of length `geom.connector_length` links the neck to the first sink node.
-    - The first sink node is placed at neck + connector_length. Subsequent nodes chain linearly.
-    - When `last_segment_tag` is set, the distal tip node (furthest from the spine) uses that
-      tag instead of `tag` (e.g. tag 5 for the sink body, tag 6 for the HH compartment).
-    - Writes a new SWC to `swc_out` and returns the output path.
+    The sink starts at the SWC node nearest ``neck_coords`` and extends along
+    ``geom.axis``. A connector frustum of length ``geom.connector_length``
+    links the neck to the first sink node. When ``last_segment_tag`` is set,
+    the distal tip uses that tag (typically 6 for HH) instead of ``tag``.
+
+    Parameters
+    ----------
+    swc_in, swc_out : path-like
+        Input SWC and destination path.
+    neck_coords : path-like or sequence of float
+        Neck XYZ, or a file with ``x y z [r]``.
+    geom : SinkGeometry
+        Cylinder radius, length, axis, and segmentation.
+    tag : int
+        SWC tag for sink body nodes (default 5).
+    last_segment_tag : int, optional
+        Tag for the distal tip node.
+
+    Returns
+    -------
+    pathlib.Path
+        ``swc_out``.
+
+    Examples
+    --------
+    >>> geom = SinkGeometry(radius=0.5, length=100.0, axis="x")
+    >>> append_sink_to_swc("TS1.swc", "TS1_wsink.swc", (0, 0, 0), geom)  # doctest: +SKIP
     """
     swc_in = Path(swc_in)
     swc_out = Path(swc_out)
@@ -392,13 +494,11 @@ def append_sink_to_swc_multi_neck_points(
     tag: int = 5,
     last_segment_tag: Optional[int] = None,
 ) -> Path:
-    """
-    Append a single sink geometry to an SWC file but accommodate multiple neck points.
+    """Append one sink, then extra-neck copies of the sink start node.
 
-    - `neck_points` must be a file where each line is one neck point: x y z
-    - The sink geometry is added once using the first neck point as the primary anchor.
-    - Each additional neck point gets a single SWC node added that is parented to the
-      sink start node (creating a branch to that location).
+    ``neck_points`` is a file of ``x y z`` rows. The first row is the primary
+    neck; each later row gets a copy of the sink-start sample parented at that
+    neck, recorded as ``# MULTI_NECK reconnect i j``.
     """
     swc_in = Path(swc_in)
     swc_out = Path(swc_out)

@@ -10,7 +10,7 @@ Conventions
 - ``cm_uF_per_cm2`` membrane capacitance; ``rL_ohm_cm`` axial resistivity;
   ``pas_leak_g_S_per_cm2`` leak (Arbor default 0.001 S/cm²).
 - SWC tags: spine=3, sink cylinder=5, sink tip=6.
-- ``hh_tags`` is a list of tags to paint Hodgkin–Huxley. The bank default is an
+- ``hh_tags`` is a list of tags to apply Hodgkin–Huxley. The bank default is an
   empty vector (shape ``(0,)``), so assign tags on the **sampled**
   ``ParameterSet``: ``parameters["hh_tags"] = [5]``. Empty + ``hh_scale=0``
   keeps the cell passive.
@@ -41,7 +41,7 @@ def make_default_parameter_bank():
 
     """
 
-    pb = ParameterBank(
+    parameter_bank = ParameterBank(
         {
             "seed": IndependentScalarParameter(0),
             "T_ms": IndependentScalarParameter(1000.0),
@@ -208,7 +208,7 @@ def make_default_parameter_bank():
             ),
         },
     )
-    return pb
+    return parameter_bank
 
 
 def make_icx_parameter_bank():
@@ -235,7 +235,7 @@ def make_icx_parameter_bank():
     - GABA_A synapse conductance and time scale: gmax = 0.5-2.0 nS, tau = 2 ms, revpot = -70 mV
     """
 
-    pb = ParameterBank(
+    parameter_bank = ParameterBank(
         {
             "seed": IndependentScalarParameter(0),
             "T_ms": IndependentScalarParameter(1000.0),
@@ -402,4 +402,4 @@ def make_icx_parameter_bank():
             ),
         },
     )
-    return pb
+    return parameter_bank

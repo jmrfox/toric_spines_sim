@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.3
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: .venv
 #     language: python
@@ -14,8 +14,11 @@
 # ---
 
 # %% [markdown]
-# Exploratory Arbor tutorial — **not a supported experiment**.
-# For package simulations use ``TSSimulator`` and ``notebooks/examples/``.
+# # Raw Arbor cable cell (optional)
+#
+# Arbor internals: segment tree, labels, decor, recipe. This is **not**
+# the package pipeline. For toric-spine simulations use tutorial notebook 13
+# (`TSSimulator`). This file lives in `notebooks/misc/` as a primer.
 
 # %%
 import arbor as A

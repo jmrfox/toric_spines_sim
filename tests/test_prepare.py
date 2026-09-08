@@ -11,7 +11,7 @@ from toric_spines_sim.geometry.prepare import (
     append_sink_write_microns,
     convert_nff_active_zone,
     list_ts_spine_swcs,
-    nff_spine_stem,
+    nff_spine_id,
     resolve_swc_path,
     resolve_swc_targets,
     scale_swc_file,
@@ -40,48 +40,48 @@ class TestSwcTargets:
         with pytest.raises(ValueError, match="either --all"):
             resolve_swc_targets(["TS1"], all_swcs=True)
 
-    def test_nff_spine_stem(self):
-        assert nff_spine_stem(Path("TS1_AZ.nff")) == "TS1"
-        assert nff_spine_stem(Path("TS21_AZ.nff")) == "TS21"
+    def test_nff_spine_id(self):
+        assert nff_spine_id(Path("TS1_AZ.nff")) == "TS1"
+        assert nff_spine_id(Path("TS21_AZ.nff")) == "TS21"
 
 
 class TestConvertNff:
     def test_writes_s_points(self, sample_nff_file, temp_dir):
-        out = temp_dir / "TS1_AZ.txt"
-        written = convert_nff_active_zone(sample_nff_file, out)
-        assert written == out
-        points = np.loadtxt(out)
+        output_path = temp_dir / "TS1_AZ.txt"
+        written = convert_nff_active_zone(sample_nff_file, output_path)
+        assert written == output_path
+        points = np.loadtxt(output_path)
         expected = np.asarray(read_nff_s_points(sample_nff_file, return_numpy=True))
         np.testing.assert_array_almost_equal(points, expected, decimal=3)
 
     def test_empty_nff_does_not_write_file(self, temp_dir):
         nff = temp_dir / "empty.nff"
         nff.write_text("# object with 1 contours.\nf 1 0 0 0 0 0 0 0\n")
-        out = temp_dir / "empty.txt"
-        convert_nff_active_zone(nff, out)
-        assert not out.exists()
+        output_path = temp_dir / "empty.txt"
+        convert_nff_active_zone(nff, output_path)
+        assert not output_path.exists()
 
 
 class TestScaleSwc:
     def test_scales_coords_and_preserves_cycle_breaks(self, sample_swc_file, temp_dir):
-        out = temp_dir / "scaled.swc"
-        scale_swc_file(sample_swc_file, out, um_per_px)
+        output_path = temp_dir / "scaled.swc"
+        scale_swc_file(sample_swc_file, output_path, um_per_px)
         pts_in = read_swc_points(sample_swc_file)
-        pts_out = read_swc_points(out)
+        pts_out = read_swc_points(output_path)
         assert set(pts_in) == set(pts_out)
         nid = next(iter(pts_in))
         for a, b in zip(pts_in[nid][:4], pts_out[nid][:4]):
             assert b == pytest.approx(a * um_per_px)
-        assert parse_cycle_breaks(out) == parse_cycle_breaks(sample_swc_file)
+        assert parse_cycle_breaks(output_path) == parse_cycle_breaks(sample_swc_file)
 
 
 class TestSynptsAndSink:
     def test_write_synpts_scales_projected_points(
         self, sample_swc_file, sample_synpts_file, temp_dir
     ):
-        out = temp_dir / "synpts.txt"
-        write_synpts_microns(sample_swc_file, sample_synpts_file, out, um_per_px=um_per_px)
-        pts = np.loadtxt(out)
+        output_path = temp_dir / "synpts.txt"
+        write_synpts_microns(sample_swc_file, sample_synpts_file, output_path, um_per_px=um_per_px)
+        pts = np.loadtxt(output_path)
         assert pts.ndim == 2 and pts.shape[1] == 3
         # Input AZ are O(1) px; output must be O(um_per_px) microns.
         assert pts[:, 0].max() < 4.0 * um_per_px + 1e-3
@@ -91,21 +91,21 @@ class TestSynptsAndSink:
         neck = temp_dir / "neck.txt"
         neck.write_text("0.0 0.0 0.0\n")
         swc_out = temp_dir / "with_sink.swc"
-        swc_out_px = temp_dir / "with_sink_px.swc"
+        output_swc_path_pixels = temp_dir / "with_sink_px.swc"
         neck_out = temp_dir / "neck_um.txt"
         written = append_sink_write_microns(
             sample_swc_file,
-            neck_file=neck,
+            neckpoint_path_pixels=neck,
             radius_um=10.0,
             connector_length_um=5.0,
             n_cylinders=5,
             um_per_px=um_per_px,
-            swc_out=swc_out,
-            swc_out_px=swc_out_px,
-            neck_out=neck_out,
+            output_swc_path_microns=swc_out,
+            output_swc_path_pixels=output_swc_path_pixels,
+            output_neckpoint_path_microns=neck_out,
         )
         assert written == swc_out.resolve()
-        assert swc_out_px.is_file()
+        assert output_swc_path_pixels.is_file()
         header = swc_out.read_text()
         assert "# SINK:" in header
         assert "radius=10" in header
@@ -118,7 +118,7 @@ class TestSynptsAndSink:
         assert sink_radii
         assert all(r == pytest.approx(10.0) for r in sink_radii)
         # Pixel SWC sink radius is 10 / um_per_px.
-        pts_px = read_swc_points(swc_out_px)
+        pts_px = read_swc_points(output_swc_path_pixels)
         sink_radii_px = [r for (_x, _y, _z, r) in pts_px.values() if r > 100.0]
         assert sink_radii_px
         assert all(r == pytest.approx(10.0 / um_per_px) for r in sink_radii_px)
@@ -135,12 +135,12 @@ class TestSynptsAndSink:
         um_out = temp_dir / "um.swc"
         append_sink_write(
             sample_swc_file,
-            neck_file=neck,
+            neckpoint_path_pixels=neck,
             radius_um=10.0,
             um_per_px=um_per_px,
-            swc_out_px=px_out,
-            swc_out_um=um_out,
-            neck_out_um=temp_dir / "neck_um.txt",
+            output_swc_path_pixels=px_out,
+            output_swc_path_microns=um_out,
+            output_neckpoint_path_microns=temp_dir / "neck_um.txt",
         )
         px_sink = next(
             line for line in px_out.read_text().splitlines() if line.startswith("# SINK:")
@@ -159,8 +159,8 @@ class TestSynptsAndSink:
             sample_swc_file,
             radius_um=2.0,
             um_per_px=um_per_px,
-            swc_out=swc_out,
-            neck_out=neck_out,
+            output_swc_path_microns=swc_out,
+            output_neckpoint_path_microns=neck_out,
         )
         assert "# SINK:" in swc_out.read_text()
         assert load_xyz_points(neck_out)[0] == pytest.approx((0.0, 0.0, 0.0))

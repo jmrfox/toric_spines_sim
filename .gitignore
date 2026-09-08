@@ -80,6 +80,9 @@ target/
 *.ipynb   
 # use jupytext sync to make notebooks from scripts and vice versa
 
+# tutorial recomputes (never overwrite data/)
+notebooks/tutorial/_artifacts/
+
 # IPython
 profile_default/
 ipython_config.py

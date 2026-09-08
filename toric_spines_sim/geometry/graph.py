@@ -240,8 +240,8 @@ def classify_compartments(
 
     # Log summary
     counts = {}
-    for cat in classification.values():
-        counts[cat] = counts.get(cat, 0) + 1
+    for label in classification.values():
+        counts[label] = counts.get(label, 0) + 1
     logger.info("Compartment classification (mode=%s): %s", mode, counts)
 
     return classification

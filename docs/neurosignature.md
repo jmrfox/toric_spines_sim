@@ -4,7 +4,7 @@
 The goal is to characterize dynamical simulations by *descriptors* (e.g., composed from summary statistics), conditional on an input ensemble, allowing quantitative comparison of systems based on dynamics rather than by mesh geometry or by raw trace shape.
 
 The system simulation is treated as a **multi-channel event-valued input → multi-channel signal-valued output** operator: an array of point-process streams goes in, and an array of continuous signals comes out. 
-A multicompartmental simulation of a toric spine (many synapses, voltages everywhere) is one instance of this. A Continuous-Time Recurrent Neural Network (CTRNN) with several inputs and several outputs is another instance — that is what `notebooks/neurosignature_example.py` uses. Nothing in the framework requires a spine, a neck, or even a neuron.
+A multicompartmental simulation of a toric spine (many synapses, voltages everywhere) is one instance of this. A Continuous-Time Recurrent Neural Network (CTRNN) with several inputs and several outputs is another instance — that is what `notebooks/misc/neurosignature_example.py` uses. Nothing in the framework requires a spine, a neck, or even a neuron.
 
 The standalone package is [neurosignature](https://github.com/jmrfox/neurosignature). In this repo it is an optional extra (`uv sync --group neurosignature`). The TS1 wiring is `simulations/ts1/neurosignature/ts1_neurosignature.py`. You do not need it to run axon studies.
 
@@ -187,7 +187,7 @@ Even after you pick which traces go into \(W\), turning them into a vector \(z \
 
 **Units and scale.** Components in the current TS1 vector mix millivolts, hertz-like spectral centroids, dimensionless ratios, and energies. Euclidean or cosine distance on the raw concatenation is dominated by whichever coordinate happens to be large. Per-component z-scoring (as `Experiment.normalize` does) is a patch, not a solution: it depends on the trial set, and it treats every coordinate as equally important.
 
-**Invariance is easy to break.** We want \(z\) not to depend on \(N_V\), \(N_T\), or channel order. Sums (residual energy over compartments, summed variances) grow with discretization. Means, densities, and carefully normalized spectra are safer, but only if every component is written that way. Changing `discretization_um` or `dt_record_ms` can move \(z\) even when \(F\) is the same cell.
+**Invariance is easy to break.** We want \(z\) not to depend on \(N_V\), \(N_T\), or channel order. Sums (residual energy over compartments, summed variances) grow with discretization. Means, densities, and carefully normalized spectra are safer, but only if every component is written that way. Changing `discretization_um` or `dt_record_ms` can move \(z\) even when \(F\) is the same.
 
 **Correlation and redundancy.** Participation ratio, eigenvalue entropy, and residual energy can all move together. Then \(d(z_1,z_2)\) double-counts one dynamical fact. Designing \(W\) so that coordinates are independently informative is an unsolved modeling problem, not a software one.
 

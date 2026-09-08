@@ -20,38 +20,48 @@ from .results import SimulationResults
 
 
 class TSSimulator:
-    """Toric Spines Simulator for Arbor simulations of toric spine morphologies.
+    """Run an Arbor simulation of a toric-spine SWC with AMPA synapses.
 
     All configuration is provided at construction time. Intermediate pipeline
-    objects (synapses, cell, recipe, etc.) are built lazily on first use and
-    cached for the lifetime of the instance. ``run()`` may be called multiple
+    objects (synapses, cell, recipe, etc.) are computed on first use, then
+    reused for the lifetime of the instance. ``run()`` may be called multiple
     times; each call reuses cached pipeline objects and creates a fresh Arbor
     simulation.
+
+    Synapses are always built as AMPA from the points file (``syn_0``,
+    ``syn_1``, … in file order). For other receptor types, build a
+    ``TSModel`` / ``SynapsePopulation`` yourself.
+
+    Event channels are mapped by **TsGroup index** to that synapse order.
+    Generators emit axon-order channels (``A0S0``, …). If axon assignments are
+    not already point-file order, call
+    ``remap_axon_channel_events_to_synapses`` before passing events here.
 
     When using stochastic event generators, pass ``parameters["seed"]`` to the
     generator so that repeated ``run()`` calls with the same instance are
     deterministic.
 
-    Example:
-        >>> from toric_spines_sim.simulation import TSSimulator
-        >>> from toric_spines_sim.simulation import make_default_parameter_bank
-        >>> from toric_spines_sim.events import StochasticEventGenerator, FlatRateCurve
-        >>>
-        >>> pb = make_default_parameter_bank()
-        >>> parameters = pb.sample()
-        >>> events = StochasticEventGenerator(
-        ...     rate_curves=[FlatRateCurve(rate_hz=50.0)],
-        ...     n_synapses_per_axon=[25],
-        ...     T_ms=parameters["T_ms"],
-        ...     seed=int(parameters["seed"]),
-        ... ).generate()
-        >>> sim = TSSimulator(
-        ...     "data/swc/microns/TS1_wsink_r10um.swc",
-        ...     "data/pointsets/microns/TS1_synpts.txt",
-        ...     events,
-        ...     parameters,
-        ... )
-        >>> results = sim.run()
+    Examples
+    --------
+    >>> from toric_spines_sim.simulation import TSSimulator
+    >>> from toric_spines_sim.simulation import make_default_parameter_bank
+    >>> from toric_spines_sim.events import StochasticEventGenerator, FlatRateCurve
+    >>>
+    >>> parameter_bank = make_default_parameter_bank()
+    >>> parameters = parameter_bank.sample()
+    >>> events = StochasticEventGenerator(
+    ...     rate_curves=[FlatRateCurve(rate_hz=50.0)],
+    ...     n_synapses_per_axon=[25],
+    ...     T_ms=parameters["T_ms"],
+    ...     seed=int(parameters["seed"]),
+    ... ).generate()
+    >>> sim = TSSimulator(
+    ...     "data/swc/microns/TS1_wsink_r10um.swc",
+    ...     "data/pointsets/microns/TS1_synpts.txt",
+    ...     events,
+    ...     parameters,
+    ... )
+    >>> results = sim.run()
     """
 
     def __init__(
@@ -70,7 +80,7 @@ class TSSimulator:
         self._parameters = parameters
         self._record_points_spec = record_points
 
-        # Lazy pipeline caches (built once per instance)
+        # Pipeline caches (computed on first use, then reused)
         self._synapses: Optional[Dict] = None
         self._gap_junctions: Optional[Dict] = None
         self._record_points_resolved: Optional[

@@ -37,12 +37,12 @@ Plotly (interactive 3D)
 - plotly_morphology_traces(morph, *, color='gray', width=2, opacity=1.0, name='morphology') -> list[go.Scatter3d]
 - plotly_locations_trace(morph, locs, *, isometry=None, color='red', size=3, name='locations') -> go.Scatter3d
 - plotly_points_trace(points, *, color='red', size=3, name='points') -> go.Scatter3d
-- plotly_morph_and_locations(morph, locs, *, isometry=None, line_kwargs=None, scatter_kwargs=None, layout_kwargs=None) -> go.Figure
+- Combine traces on a Plotly figure, or use ``plot_morphology_3d(..., backend='plotly')``.
 
 Trace plotting
 --------------
-For plotting Arbor simulation traces, see `toric_spines_sim.traces`:
-- TracePlotter: easy Matplotlib plotting for `simulation.samples(handle)` results.
+For voltage / raster plots see ``toric_spines_sim.viz.plotting.TimeSeriesPlotter``
+(and ``RasterPlotter``, ``HistogramGridPlotter``).
 
 Notes
 -----

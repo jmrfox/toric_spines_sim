@@ -19,7 +19,7 @@ Build the NMODL catalogue first if `toric_spines_sim/mechanisms/custom-catalogue
 uv run bash scripts/make_custom_catalogue.sh
 ```
 
-Blessed morphologies are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Synapse coordinates are `data/pointsets/microns/TS{id}_synpts.txt`.
+Precomputed morphologies already in `data/` are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Synapse coordinates are `data/pointsets/microns/TS{id}_synpts.txt`.
 
 ## Shared vs per-model
 
@@ -30,7 +30,7 @@ Blessed morphologies are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`)
 | [common/axons_report.py](common/axons_report.py) | Pairwise / sequential / synchrony PDF study |
 | [common/axons_dash.py](common/axons_dash.py), [common/axons_animation.py](common/axons_animation.py) | Dash and HTML animation helpers |
 | `simulations/ts{id}/params.py` | Parameter bank: starts from `make_default_parameter_bank()`; uncomment `.value` lines to override |
-| `simulations/ts{id}/inputs.py` | Axon map path, scenario knobs (`ACTIVE_AXONS`, rates, sequential order) |
+| `simulations/ts{id}/inputs.py` | Axon map path, scenario options (`ACTIVE_AXONS`, rates, sequential order) |
 | `simulations/ts{id}/axons.py` | Thin `run_axons_study(MODEL)` entry point |
 
 ## Axon maps

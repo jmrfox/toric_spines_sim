@@ -25,9 +25,9 @@ uv run python scripts/skeletonize_meshes.py TS1.obj
 uv run python scripts/skeletonize_meshes.py --all
 ```
 
-Output: `data/skeletons/TS{id}.polylines.txt`. Review in `notebooks/ts_morphology/view_skeletons`.
+Output: `data/skeletons/TS{id}.polylines.txt`. Review in `notebooks/tutorial/02_skeletonization_basic` (`SHOW_ALL = True`).
 
-`profile="auto"` is an oracle over contraction settings (including the quality / medial-centering tradeoff). That is a different knob set than CGALLab’s raw QST/MCST sliders; do not paste CGALLab numbers into pymcfs and expect the same contract. If a skeleton is bad, change `--branching` (`sparse` / `balanced` / `dense`) or inspect the mesh for watertightness before hunting scalar weights.
+`profile="auto"` automatically chooses contraction settings (including the quality / medial-centering tradeoff). Those options are not the same as CGALLab’s raw QST/MCST sliders; do not paste CGALLab numbers into pymcfs and expect the same contract. If a skeleton is bad, change `--branching` (`sparse` / `balanced` / `dense`) or inspect the mesh for watertightness before hunting scalar weights.
 
 CHOLMOD (`libsuitesparse-dev` / `suite-sparse`) is optional and only speeds **large** meshes.
 
@@ -41,7 +41,7 @@ To skeletonize one OBJ:
 
 1. Start `CGALLab.exe`, green **+**, load the OBJ. The surface should render.
 2. **Operations → Triangulated Surface Mesh Skeletonization → Mean Curvature Skeleton (Advanced)**. The mesh disappears — it is hidden; TSMS works on an internal copy.
-3. Left panel: enable **is medially centered**. Defaults are Quality Speed Tradeoff (QST / w_H) = 0.1 and Medially Centered Speed Tradeoff (MCST / w_M) = 0.2. Leave other knobs at default unless you know why.
+3. Left panel: enable **is medially centered**. Defaults are Quality Speed Tradeoff (QST / w_H) = 0.1 and Medially Centered Speed Tradeoff (MCST / w_M) = 0.2. Leave other options at their defaults unless you know why.
 4. **Run one iteration** (watch contraction) or **Run to convergence**, then **Skeletonize**.
 5. In the object list you get a contracted mesh, fixed points, and a **skeleton curve**. Right-click the skeleton curve → **Save as…** → `polylines.txt`.
 
@@ -55,7 +55,7 @@ CGALLab **defaults** often produce a skeleton that exits the mesh. mascaf can pu
 
 For **individual toric spines in pixel coordinates**, values that worked for the mascaf paper models were about **QST = 0.4–0.5** and **MCST = 5–10** (paper fits used **QST = 0.5, MCST = 5**). They are good enough for mascaf, not geometrically perfect.
 
-QST raises branching density; too high → spurious branches into the same volume. MCST pulls toward the medial axis; too high → spurious loops and noise. Optimal values depend on the mesh. A parameter oracle (mesh → QST/MCST) is a possible extension; pymcfs `profile="auto"` is the current step in that direction.
+QST raises branching density; too high → spurious branches into the same volume. MCST pulls toward the medial axis; too high → spurious loops and noise. Optimal values depend on the mesh. Automatically choosing QST/MCST from the mesh is a possible extension; pymcfs `profile="auto"` is the current step in that direction.
 
 ## Mesh must be watertight
 

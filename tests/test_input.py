@@ -6,6 +6,7 @@ import pytest
 
 from toric_spines_sim.simulation.input import (
     load_axon_events_from_file,
+    random_axon_events,
     remap_axon_channel_events_to_synapses,
 )
 
@@ -99,3 +100,28 @@ class TestRemapAxonChannelEventsToSynapses:
         )
         with pytest.raises(ValueError, match="multiple axon assignments"):
             remap_axon_channel_events_to_synapses(events, [[0], [0]])
+
+
+class TestRandomAxonEvents:
+    def test_default_phase_range_does_not_raise(self):
+        rate_curves, n_synapses_per_axon = random_axon_events(
+            n_synapses=5,
+            n_axons=3,
+            mod_freq_hz=1.0,
+            peak_rate_hz=10.0,
+            seed=0,
+        )
+        assert len(rate_curves) == 3
+        assert len(n_synapses_per_axon) == 3
+        assert sum(n_synapses_per_axon) == 5
+
+    def test_custom_phase_range(self):
+        rate_curves, _ = random_axon_events(
+            n_synapses=4,
+            n_axons=2,
+            mod_freq_hz=1.0,
+            peak_rate_hz=10.0,
+            phase_range_rad=(0.0, 0.0),
+            seed=0,
+        )
+        assert all(curve._phase == 0.0 for curve in rate_curves)

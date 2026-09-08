@@ -20,7 +20,7 @@ Build the NMODL catalogue first if `toric_spines_sim/mechanisms/custom-catalogue
 uv run bash scripts/make_custom_catalogue.sh
 ```
 
-Blessed morphologies are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Synapse coordinates are `data/pointsets/microns/TS{id}_synpts.txt`. Expected inputs for an axon study also include `data/ts_axons/ts{id}_axons.txt`. PDF / HTML outputs go under `simulations/ts{id}/axons/results/`.
+Precomputed morphologies already in `data/` are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Synapse coordinates are `data/pointsets/microns/TS{id}_synpts.txt`. Expected inputs for an axon study also include `data/ts_axons/ts{id}_axons.txt`. PDF / HTML outputs go under `simulations/ts{id}/axons/results/`.
 
 ```
 simulations/
@@ -28,7 +28,7 @@ simulations/
   common/                 shared axon PDF / Dash / animation helpers
   ts1/                    (same pattern for ts2, ts3, ts4, ts48, ts67, ts76)
     params.py             parameter bank (uncomment .value lines to override)
-    inputs.py             SWC / synpts / axon map + scenario knobs
+    inputs.py             SWC / synpts / axon map + scenario options
     axons.py              PDF study
     axons_dash.py         3D Dash dashboard
     axons_animation.py    HTML voltage animation
@@ -50,7 +50,7 @@ Tweak biophysics in `params.py` (starts from `make_default_parameter_bank()`). T
 | `simulations/common/axons_report.py` | Pairwise / sequential / synchrony PDF study |
 | `simulations/common/axons_dash.py`, `axons_animation.py` | Dash and HTML animation helpers |
 | `simulations/ts{id}/params.py` | Parameter bank: starts from `make_default_parameter_bank()`; uncomment `.value` lines to override |
-| `simulations/ts{id}/inputs.py` | Axon map path, scenario knobs (`ACTIVE_AXONS`, rates, sequential order) |
+| `simulations/ts{id}/inputs.py` | Axon map path, scenario options (`ACTIVE_AXONS`, rates, sequential order) |
 | `simulations/ts{id}/axons.py` | Thin `run_axons_study(MODEL)` entry point |
 
 ## Axon maps

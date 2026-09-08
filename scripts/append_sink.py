@@ -2,12 +2,12 @@
 """Append a cylindrical sink to toric-spine SWCs (pixels and microns).
 
 Pixel-space spines live under ``data/swc/pixels/TS{n}.swc``. This script
-appends a sink using ``data/pointsets/pixels/<stem>_neckpoint.txt`` when
+appends a sink using ``data/pointsets/pixels/<spine_id>_neckpoint.txt`` when
 present (else the SWC root) and writes:
 
-    data/swc/pixels/<stem>_wsink_r<R>um.swc
-    data/swc/microns/<stem>_wsink_r<R>um.swc
-    data/pointsets/microns/<stem>_neckpoint.txt
+    data/swc/pixels/<spine_id>_wsink_r<R>um.swc
+    data/swc/microns/<spine_id>_wsink_r<R>um.swc
+    data/pointsets/microns/<spine_id>_neckpoint.txt
 
 Sink dimensions are specified in microns (converted to pixels for attachment).
 Sink axis is the optimal direction away from the morphology.
@@ -43,7 +43,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "swcs",
         nargs="*",
-        help="SWC path(s) or bare stems under data/swc/pixels/ (e.g. TS1)",
+        help="SWC path(s) or bare spine ids under data/swc/pixels/ (e.g. TS1)",
     )
     parser.add_argument(
         "--all",
@@ -112,10 +112,10 @@ def main(argv: list[str] | None = None) -> int:
         return 2 if isinstance(exc, ValueError) else 1
 
     failures = 0
-    for swc_px in targets:
+    for swc_path_pixels in targets:
         try:
             written_px, written_um = append_sink_write(
-                swc_px,
+                swc_path_pixels,
                 radius_um=args.radius_um,
                 connector_length_um=args.connector_length_um,
                 n_cylinders=args.n_cylinders,
@@ -125,12 +125,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         except Exception as exc:
             failures += 1
-            logger.exception("Failed to append sink for %s: %s", swc_px, exc)
-            print(f"error: failed {swc_px.name}: {exc}", file=sys.stderr)
+            logger.exception("Failed to append sink for %s: %s", swc_path_pixels, exc)
+            print(f"error: failed {swc_path_pixels.name}: {exc}", file=sys.stderr)
             continue
-        print(f"swc_in: {swc_px}")
-        print(f"swc_out_px: {written_px}")
-        print(f"swc_out_um: {written_um}")
+        print(f"swc_in: {swc_path_pixels}")
+        print(f"output_swc_path_pixels: {written_px}")
+        print(f"output_swc_path_microns: {written_um}")
 
     if failures:
         print(f"error: {failures} of {len(targets)} SWC(s) failed", file=sys.stderr)

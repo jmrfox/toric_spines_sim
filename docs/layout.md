@@ -7,7 +7,7 @@ Use `toric_spines_sim.paths` instead of `../../data/...` (see [Path helpers](pac
 ```
 toric_spines_sim/
   data/                 morphologies and pointsets used by sims
-  notebooks/            examples, morphology review, integration
+  notebooks/            tutorial walkthrough + misc demos
   scripts/              CLI for mesh → SWC → sink (and catalogue build)
   simulations/          per-spine experiments (edit params here)
   toric_spines_sim/     Python package (geometry, model, simulator, viz)
@@ -21,9 +21,8 @@ toric_spines_sim/
 | `scripts/` | Supported pipeline CLIs (`skeletonize_meshes.py`, `fit_swc.py`, `append_sink.py`, …) |
 | `toric_spines_sim/` | Library: SWC I/O, sink append, `TSModel`, `TSSimulator`, events, viz |
 | `simulations/` | One folder per spine plus shared axon-study code |
-| `notebooks/examples/` | Parameter / event / cylinder demos |
-| `notebooks/ts_morphology/` | Review skeletons, fitted SWCs, and sink models |
-| `notebooks/ts_integration/` | Per-spine integration notebooks |
+| `notebooks/tutorial/` | Numbered walkthrough (one notebook per package concept: mesh → simulate → k-matrix / viz) |
+| `notebooks/misc/` | Extra demos (spiny dendrite, neurosignature, raw Arbor primer) |
 | `archive/` | Historical scripts and morphologies |
 
 ## Data layout
@@ -42,6 +41,6 @@ Put **new model files** in `data/` using the `TS{id}` stem (e.g. `TS1`, `TS48`).
 | `data/ts_axons/` | Axon→synapse maps `ts{id}_axons.txt` (1-based synapse indices) |
 | `data/events/` | Demo event streams |
 
-Blessed experiment morphologies are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Older `TS*_s50_*` / `TS*_s200_*` names live under `archive/data/swc/`.
+Precomputed experiment morphologies already in `data/` are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Older `TS*_s50_*` / `TS*_s200_*` names live under `archive/data/swc/`.
 
 To add a spine, drop `TS{id}.obj` in `data/mesh/` (and optionally `TS{id}_AZ.nff` in `data/nff/`), then run the [morphology pipeline](morphology.md). From IMOD: [From IMOD to mesh](reconstruction.md). Existing meshes: TS1, TS2, TS3, TS4, TS21, TS24, TS48, TS67, TS76.

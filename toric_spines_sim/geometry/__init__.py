@@ -58,7 +58,7 @@ from .neckpoint import (
     compute_neck_candidates,
     compute_neck_points,
     compute_neck_points_all,
-    compute_neck_points_for_stem,
+    compute_neck_points_for_spine,
     default_neckpoint_path,
 )
 from .prepare import (
@@ -119,7 +119,7 @@ __all__ = [
     "compute_neck_candidates",
     "compute_neck_points",
     "compute_neck_points_all",
-    "compute_neck_points_for_stem",
+    "compute_neck_points_for_spine",
     "default_neckpoint_path",
     "DEFAULT_SINK_RADIUS_UM",
     "append_sink_write",

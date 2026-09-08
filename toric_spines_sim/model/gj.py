@@ -35,11 +35,14 @@ class GapJunctionPoint:
     index_pair
         SWC node IDs ``(i, j)`` to join.
     location
-        XYZ of node ``i`` (µm or px, matching the SWC).
+        XYZ of node ``i`` (µm or px, matching the SWC). Display only;
+        electrical endpoints are ``index_pair``.
     weight
         Arbor gap-junction weight (dimensionless conductance scale).
     location_b
         XYZ of node ``j`` when it differs from ``i``; otherwise ``None``.
+        Display only: ``TSModel`` places the junction from ``index_pair``,
+        not from these coordinates.
     """
 
     index_pair: Tuple[int, int]
@@ -52,7 +55,19 @@ def prepare_gap_junctions(
     swc_file: Path,
     parameters: ParameterSet,
 ):
-    """Build gap junctions from CYCLE_BREAK and MULTI_NECK reconnect headers."""
+    """Build gap junctions from CYCLE_BREAK and MULTI_NECK reconnect headers.
+
+    Returns
+    -------
+    dict[str, GapJunctionPoint]
+        Labels ``gj_0``, ``gj_1``, … in header order.
+
+    Examples
+    --------
+    >>> gjs = prepare_gap_junctions(swc_path, parameters)  # doctest: +SKIP
+    >>> gjs["gj_0"].index_pair
+    (12, 13)
+    """
     weight = parameters["gj_weight"]
     reconnect_pairs = parse_reconnect_pairs(swc_file)
     gap_junctions = {}

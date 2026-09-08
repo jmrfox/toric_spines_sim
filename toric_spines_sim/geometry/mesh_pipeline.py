@@ -30,7 +30,7 @@ _MESH_EXTRA_HINT = (
 PathLike = Union[str, Path]
 
 # Defaults matching pymcfs ``toric_spines/scripts/batch_ts_skeletonize.py``
-# (sparse oracle / profile="auto", refine with tip extension on).
+# (profile="auto" automatically chooses contraction settings; tip extension on).
 TORIC_SPINES_SKELETONIZE_DEFAULTS: dict[str, Any] = {
     "profile": "auto",
     "branching": "sparse",
@@ -79,7 +79,7 @@ def _require_mascaf():
 
 
 def resolve_mesh_path(mesh: PathLike) -> Path:
-    """Resolve a mesh path; bare stems/filenames are looked up under ``data/mesh/``.
+    """Resolve a mesh path; bare spine ids/filenames are looked up under ``data/mesh/``.
 
     Accepts ``TS1``, ``TS1.obj``, or an absolute/relative path.
     """
@@ -137,12 +137,12 @@ def resolve_mesh_targets(
 
 
 def default_polylines_path(mesh_path: Path) -> Path:
-    """Default ``data/skeletons/<stem>.polylines.txt`` for a mesh."""
+    """Default ``data/skeletons/<spine_id>.polylines.txt`` for a mesh."""
     return get_skeleton_path(f"{mesh_path.stem}.polylines.txt")
 
 
 def default_swc_path(mesh_path: Path) -> Path:
-    """Default ``data/swc/pixels/<stem>.swc`` for a mesh."""
+    """Default ``data/swc/pixels/<spine_id>.swc`` for a mesh."""
     return get_swc_path(f"{mesh_path.stem}.swc", units="pixels")
 
 
@@ -327,16 +327,43 @@ def mesh_to_swc(
 ) -> MeshToSwcResult:
     """Run mesh → polylines → SWC (or a subset of those steps).
 
-    Default outputs are ``data/skeletons/<stem>.polylines.txt`` and
-    ``data/swc/pixels/<stem>.swc``.
+    Default outputs are ``data/skeletons/<spine_id>.polylines.txt`` and
+    ``data/swc/pixels/<spine_id>.swc``.
+
+    Parameters
+    ----------
+    mesh_path : path-like
+        Mesh file or spine id (``TS1``).
+    polylines_path, swc_path : path-like, optional
+        Override default output paths.
+    skip_skeletonize : bool
+        If True, reuse existing polylines (must already exist).
+    polylines_only : bool
+        Stop after skeletonization; ``swc_path`` in the result is ``None``.
+    profile : str
+        pymcfs skeletonize profile (``auto`` or a named profile).
+    max_edge_length_frac, radius_strategy, scale_radii, basis_optimize
+        Forwarded to ``fit_swc``.
+    skeletonize_kwargs
+        Extra kwargs for ``skeletonize_mesh``.
+
+    Returns
+    -------
+    MeshToSwcResult
+        Resolved mesh / polylines / SWC paths.
+
+    Examples
+    --------
+    >>> mesh_to_swc("TS1", skip_skeletonize=True)  # doctest: +SKIP
+    >>> mesh_to_swc("TS1.obj", polylines_only=True)  # doctest: +SKIP
     """
     mesh_path = resolve_mesh_path(mesh_path)
-    out_polylines = (
+    output_polylines_path = (
         Path(polylines_path)
         if polylines_path is not None
         else default_polylines_path(mesh_path)
     )
-    out_swc = Path(swc_path) if swc_path is not None else default_swc_path(mesh_path)
+    output_swc_path = Path(swc_path) if swc_path is not None else default_swc_path(mesh_path)
 
     SKELETONS_DIR.mkdir(parents=True, exist_ok=True)
     SWC_PIXELS_DIR.mkdir(parents=True, exist_ok=True)
@@ -344,26 +371,26 @@ def mesh_to_swc(
     if not skip_skeletonize:
         skeletonize_mesh(
             mesh_path,
-            out_polylines,
+            output_polylines_path,
             profile=profile,
             **skeletonize_kwargs,
         )
-    elif not out_polylines.is_file():
+    elif not output_polylines_path.is_file():
         raise FileNotFoundError(
-            f"skip_skeletonize=True but polylines not found: {out_polylines}"
+            f"skip_skeletonize=True but polylines not found: {output_polylines_path}"
         )
 
     if polylines_only:
         return MeshToSwcResult(
             mesh_path=mesh_path,
-            polylines_path=out_polylines.resolve(),
+            polylines_path=output_polylines_path.resolve(),
             swc_path=None,
         )
 
     written_swc = fit_swc(
         mesh_path,
-        out_polylines,
-        out_swc,
+        output_polylines_path,
+        output_swc_path,
         max_edge_length_frac=max_edge_length_frac,
         radius_strategy=radius_strategy,
         scale_radii=scale_radii,
@@ -373,6 +400,6 @@ def mesh_to_swc(
     )
     return MeshToSwcResult(
         mesh_path=mesh_path,
-        polylines_path=out_polylines.resolve(),
+        polylines_path=output_polylines_path.resolve(),
         swc_path=written_swc,
     )

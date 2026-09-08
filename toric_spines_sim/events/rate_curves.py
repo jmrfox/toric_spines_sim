@@ -22,8 +22,17 @@ class RateCurve(ABC):
     """
 
     @abstractmethod
-    def rate_at(self, t_ms: float) -> float:
-        """Return the instantaneous rate at time t_ms (in Hz)."""
+    def rate_at(self, t_ms: float, T_ms: float | None = None) -> float:
+        """Return the instantaneous rate at time ``t_ms`` (Hz).
+
+        Parameters
+        ----------
+        t_ms : float
+            Time in milliseconds.
+        T_ms : float, optional
+            Total duration in milliseconds. Required by curves whose shape
+            is defined over a finite window (currently ``LinearRateCurve``).
+        """
         pass
 
     @abstractmethod
@@ -35,13 +44,17 @@ class RateCurve(ABC):
     def get_isis(self, T_ms: float, delay_ms: float) -> List[float]:
         """Compute inter-spike intervals for deterministic generation.
 
-        Args:
-            T_ms: Total simulation time in milliseconds.
-            delay_ms: Initial delay before events start.
+        Parameters
+        ----------
+        T_ms : float
+            Total simulation time in milliseconds.
+        delay_ms : float
+            Initial delay before events start.
 
-        Returns:
-            List of ISIs (in ms) for deterministic event timing.
-            The cumulative sum of ISIs plus delay gives event times.
+        Returns
+        -------
+        list of float
+            ISIs in ms. Cumulative sum plus delay gives event times.
         """
         pass
 
@@ -56,7 +69,7 @@ class FlatRateCurve(RateCurve):
     def __init__(self, rate_hz: float):
         self._rate_hz = float(rate_hz)
 
-    def rate_at(self, t_ms: float) -> float:
+    def rate_at(self, t_ms: float, T_ms: float | None = None) -> float:
         return max(0.0, self._rate_hz)
 
     def max_rate(self) -> float:
@@ -76,23 +89,40 @@ class FlatRateCurve(RateCurve):
 
 
 class LinearRateCurve(RateCurve):
-    """Linearly varying rate curve.
+    """Linear ramp from ``rate_start_hz`` at t=0 to ``rate_end_hz`` at t=T_ms.
 
-    Rate varies linearly from rate_start_hz at t=0 to rate_end_hz at t=T_ms.
+    Stochastic generators pass ``T_ms`` into ``rate_at`` so Poisson thinning
+    follows the same ramp as deterministic ``get_isis``.
 
-    Args:
-        rate_start_hz: Rate at start (t=0) in Hz.
-        rate_end_hz: Rate at end (t=T_ms) in Hz.
+    Parameters
+    ----------
+    rate_start_hz : float
+        Rate at t=0 (Hz).
+    rate_end_hz : float
+        Rate at t=T_ms (Hz).
+
+    Examples
+    --------
+    >>> curve = LinearRateCurve(10.0, 20.0)
+    >>> curve.rate_at(500.0, T_ms=1000.0)
+    15.0
     """
 
     def __init__(self, rate_start_hz: float, rate_end_hz: float):
         self._rate_start_hz = float(rate_start_hz)
         self._rate_end_hz = float(rate_end_hz)
 
-    def rate_at(self, t_ms: float) -> float:
-        # Linear interpolation, but rate is always non-negative
-        # This is a simplified version - for deterministic we need proper integration
-        return max(0.0, self._rate_start_hz)
+    def rate_at(self, t_ms: float, T_ms: float | None = None) -> float:
+        if T_ms is None:
+            raise ValueError(
+                "LinearRateCurve.rate_at requires T_ms (the duration over which "
+                "the rate ramps from rate_start_hz to rate_end_hz)"
+            )
+        if T_ms <= 0:
+            raise ValueError("T_ms must be positive")
+        frac = float(np.clip(t_ms / T_ms, 0.0, 1.0))
+        rate = self._rate_start_hz + (self._rate_end_hz - self._rate_start_hz) * frac
+        return max(0.0, rate)
 
     def max_rate(self) -> float:
         return max(0.0, self._rate_start_hz, self._rate_end_hz)
@@ -152,7 +182,7 @@ class StepRateCurve(RateCurve):
         self._step_duration_ms = float(step_duration_ms)
         self._n_steps = len(self._rates_hz)
 
-    def rate_at(self, t_ms: float) -> float:
+    def rate_at(self, t_ms: float, T_ms: float | None = None) -> float:
         if self._step_duration_ms <= 0:
             return 0.0
         step_idx = int(t_ms // self._step_duration_ms)
@@ -250,7 +280,7 @@ class SineRateCurve(RateCurve):
             "baseline": self._baseline,
         }
 
-    def rate_at(self, t_ms: float) -> float:
+    def rate_at(self, t_ms: float, T_ms: float | None = None) -> float:
         if self._peak_rate_hz <= 0:
             return 0.0
         val = np.sin(self._omega * t_ms + self._phase) + self._baseline

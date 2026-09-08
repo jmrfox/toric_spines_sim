@@ -51,7 +51,7 @@ def make_parser() -> argparse.ArgumentParser:
         "--profile",
         type=str,
         default=str(defaults["profile"]),
-        help='pymcfs profile (default: auto = sparse oracle for TS meshes)',
+        help='pymcfs profile (default: auto = automatically choose contraction settings for TS meshes)',
     )
     parser.add_argument(
         "--branching",

@@ -9,7 +9,7 @@ Run from the repository root::
 
     uv run python -m simulations.ts4.axons
 
-Tweak parameters in ``simulations/ts4/params.py`` and knobs in
+Tweak parameters in ``simulations/ts4/params.py`` and options in
 ``simulations/ts4/inputs.py``.
 """
 

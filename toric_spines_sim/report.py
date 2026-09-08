@@ -1,3 +1,8 @@
+"""PDF report builder wrapping ReportLab (matplotlib and Plotly figures).
+
+Use ``PdfReport`` to accumulate titles, tables, and figures, then ``build()``.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
@@ -74,6 +79,22 @@ def _scale_image_to_page(
 
 
 class PdfReport:
+    """Accumulate a letter-size PDF of text, tables, and figures.
+
+    Parameters
+    ----------
+    output_path : str
+        Destination ``.pdf`` path.
+    pagesize, left_margin, right_margin, top_margin, bottom_margin
+        ReportLab page setup (defaults: letter, 0.75 in margins).
+
+    Examples
+    --------
+    >>> report = PdfReport("out.pdf")
+    >>> report.add_title("TS1")
+    >>> report.add_figure(fig)  # matplotlib or plotly
+    >>> report.build()
+    """
     def __init__(
         self,
         output_path: str,
@@ -134,10 +155,12 @@ class PdfReport:
         )
 
     def add_title(self, text: str):
+        """Append a title paragraph."""
         self._story.append(Paragraph(text, self._styles["Title"]))
         self._story.append(Spacer(1, 0.2 * inch))
 
     def add_heading(self, text: str, *, level: int = 1):
+        """Append a heading (level 1–3)."""
         style_name = {1: "Heading1", 2: "Heading2", 3: "Heading3"}.get(
             level, "Heading3"
         )
@@ -145,13 +168,16 @@ class PdfReport:
         self._story.append(Spacer(1, 0.1 * inch))
 
     def add_paragraph(self, text: str):
+        """Append a body paragraph."""
         self._story.append(Paragraph(text, self._styles["BodyText"]))
         self._story.append(Spacer(1, 0.1 * inch))
 
     def add_spacer(self, height: float = 0.1 * inch):
+        """Append vertical space."""
         self._story.append(Spacer(1, height))
 
     def add_page_break(self):
+        """Start a new page."""
         self._story.append(PageBreak())
 
     def add_table(
@@ -163,6 +189,7 @@ class PdfReport:
         grid: bool = True,
         header_row: bool = False,
     ):
+        """Append a grid table. First row is styled as a header if ``header_row``."""
         table = Table(data, colWidths=col_widths, rowHeights=row_heights)
         style_cmds: List[Tuple[str, Tuple[int, int], Tuple[int, int], Any]] = []
         if grid:
@@ -194,6 +221,7 @@ class PdfReport:
         grid: bool = True,
         header: bool = True,
     ):
+        """Append a key/value table, optionally split across even column pairs."""
         items = list(data.items())
         if not items:
             return
@@ -239,6 +267,7 @@ class PdfReport:
         height: Optional[float] = None,
         figure_spacer: float = 0.1 * inch,
     ):
+        """Embed a raster image, scaled to content width by default."""
         if width is None and height is None:
             width = self.content_width
             height = None
@@ -259,6 +288,7 @@ class PdfReport:
         dpi: int = 300,
         figure_spacer: Optional[float] = None,
     ):
+        """Embed a matplotlib or Plotly figure as PNG."""
         if figure_spacer is None:
             figure_spacer = 0.05 * inch
         buf = io.BytesIO()
@@ -335,6 +365,7 @@ class PdfReport:
         figures: Optional[Sequence[Any]] = None,
         page_break_after: bool = False,
     ):
+        """Append a named simulation block: parameter table, metrics, figures."""
         self.add_heading(name, level=2)
         rows: List[List[str]] = []
         if parameters:
@@ -354,4 +385,5 @@ class PdfReport:
             self.add_page_break()
 
     def build(self):
+        """Write the PDF to ``output_path``."""
         self._doc.build(self._story)

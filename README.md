@@ -21,4 +21,4 @@ uv run bash scripts/make_custom_catalogue.sh
 
 `uv sync` installs Arbor and the GitHub packages `swctools`, `jscip`, `pymcfs`, and `mascaf`. The TS1 neurosignature pipeline is optional: `uv sync --group neurosignature`.
 
-Run from the repository root. Tests: `uv run pytest`. Canonical experiment: `uv run python -m simulations.ts1.axons`.
+Run from the repository root. Tests: `uv run pytest`. Full axon PDF study: `uv run python -m simulations.ts1.axons`.

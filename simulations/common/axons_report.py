@@ -57,7 +57,7 @@ SYNC_HIST_NORMALIZE_PER_COLUMN = False
 PAIR_DELAY_MIN_MS = -100.0
 PAIR_DELAY_MAX_MS = 100.0
 PAIR_DELAY_STEP_MS = 10.0
-REPORT_STEM = "TS"
+REPORT_SPINE_ID = "TS"
 REPORT_FILEPATH: Path | None = None
 swc_filepath: Path | None = None
 synpts_filepath: Path | None = None
@@ -1222,13 +1222,13 @@ def _add_random_jitter_sweep_pages(
 
 
 def _apply_config(config: ModelConfig) -> None:
-    """Bind module-level study knobs from ``config``."""
+    """Bind module-level study options from ``config``."""
     global calculations, SHORT_T_MS, PULSE_TIME_MS, N_AXONS
     global SEQUENTIAL_AXON_ORDER, SYNC_X_MAX_MS, SYNC_X_STEP_MS
     global SYNC_N_TRIALS, SYNC_RNG_SEED, SYNC_EXTRA_AXON_SETS
     global SYNC_HIST_NORMALIZE_PER_COLUMN
     global PAIR_DELAY_MIN_MS, PAIR_DELAY_MAX_MS, PAIR_DELAY_STEP_MS
-    global REPORT_STEM, REPORT_FILEPATH
+    global REPORT_SPINE_ID, REPORT_FILEPATH
     global swc_filepath, synpts_filepath, axon_assignment_file
 
     calculations = dict(config.calculations)
@@ -1245,12 +1245,12 @@ def _apply_config(config: ModelConfig) -> None:
     PAIR_DELAY_MIN_MS = config.pair_delay_min_ms
     PAIR_DELAY_MAX_MS = config.pair_delay_max_ms
     PAIR_DELAY_STEP_MS = config.pair_delay_step_ms
-    REPORT_STEM = config.stem
+    REPORT_SPINE_ID = config.spine_id
     swc_filepath = config.swc_path()
     synpts_filepath = config.synpts_path()
     axon_assignment_file = config.axon_assignment_file
     report_name = (
-        f"{config.stem}_axons_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        f"{config.spine_id}_axons_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     )
     REPORT_FILEPATH = config.results_dir() / report_name
     REPORT_FILEPATH.parent.mkdir(parents=True, exist_ok=True)
@@ -1303,7 +1303,7 @@ def run_axons_study(config: ModelConfig) -> Path:
     logger.info("Generating PDF report...")
     report = PdfReport(str(REPORT_FILEPATH))
     _configure_report_style(report)
-    report.add_title(f"{REPORT_STEM} Axons Study (Short Simulations)")
+    report.add_title(f"{REPORT_SPINE_ID} Axons Study (Short Simulations)")
 
     report.add_heading("Simulation Parameters", level=2)
     params_dict = {name: np.round(parameters[name], 6) for name in parameters.index}

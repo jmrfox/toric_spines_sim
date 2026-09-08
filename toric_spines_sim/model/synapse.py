@@ -123,7 +123,28 @@ MODEL_REGISTRY: Dict[str, Dict[str, object]] = {
 
 @dataclass
 class SynapsePoint:
-    """Synapse point specification."""
+    """One placed synapse: XYZ, mechanism name, and parameter dicts.
+
+    ``synapse_params`` uses human-readable keys (``gmax_uS``, ``tau_ms``, …).
+    ``mechanism_params`` is the same values renamed for Arbor (``gmax``,
+    ``tau``, …). ``TSModel`` applies ``mechanism_params``.
+
+    Attributes
+    ----------
+    location : tuple of float
+        XYZ in the same units as the SWC.
+    model : str
+        Registry key (``ampa``, ``nmda``, ``gabaa``, ``gabab``, ``effexc``).
+    mechanism : str
+        NMODL mechanism name (e.g. ``ampasyn``).
+    synapse_params, mechanism_params : dict
+        Conductance/time-constant values; see above.
+
+    Examples
+    --------
+    >>> synapse_population = SynapsePopulation.from_file("TS1_synpts.txt", "ampa", params)  # doctest: +SKIP
+    >>> synapse_population.synapses["syn_0"].mechanism_params["gmax"]
+    """
 
     location: Location
     model: str
@@ -207,6 +228,12 @@ class SynapsePopulation:
     Each synapse is assigned parameters by sampling an internal ParameterBank
     built from ``global_parameters``. By default all parameters have
     ``is_sampled=False``, so each synapse receives the same values.
+
+    Examples
+    --------
+    >>> synapse_population = SynapsePopulation.from_file("TS1_synpts.txt", "ampa", params)  # doctest: +SKIP
+    >>> synapse_population.synapses["syn_0"].mechanism
+    'ampasyn'
     """
 
     def __init__(

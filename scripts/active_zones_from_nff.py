@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Convert NFF active-zone markers to pointsets, and write micron synpts.
 
-Reads ``data/nff/<stem>_AZ.nff`` (pixel coordinates) and writes:
+Reads ``data/nff/<spine_id>_AZ.nff`` (pixel coordinates) and writes:
 
-- ``data/pointsets/pixels/<stem>_AZ.txt`` — raw AZ XYZ
-- ``data/pointsets/microns/<stem>_synpts.txt`` — AZ projected onto the matching
-  ``data/swc/pixels/<stem>.swc``, scaled by the project conversion factor
+- ``data/pointsets/pixels/<spine_id>_AZ.txt`` — raw AZ XYZ
+- ``data/pointsets/microns/<spine_id>_synpts.txt`` — AZ projected onto the matching
+  ``data/swc/pixels/<spine_id>.swc``, scaled by the project conversion factor
   (5 nm/pixel)
 
 NFF files with no ``s`` points produce an empty AZ file and skip synpts.
@@ -24,7 +24,7 @@ import sys
 
 from toric_spines_sim.geometry.prepare import (
     convert_nff_active_zone,
-    nff_spine_stem,
+    nff_spine_id,
     write_synpts_microns,
 )
 from toric_spines_sim.paths import NFF_DIR, SWC_PIXELS_DIR
@@ -86,19 +86,19 @@ def main(argv: list[str] | None = None) -> int:
             logger.warning("Skipping synpts for %s (no AZ points)", nff_path.name)
             continue
 
-        stem = nff_spine_stem(nff_path)
-        swc_px = SWC_PIXELS_DIR / f"{stem}.swc"
-        if not swc_px.is_file():
-            logger.warning("No matching SWC %s; skipping synpts", swc_px)
+        spine_id = nff_spine_id(nff_path)
+        swc_path_pixels = SWC_PIXELS_DIR / f"{spine_id}.swc"
+        if not swc_path_pixels.is_file():
+            logger.warning("No matching SWC %s; skipping synpts", swc_path_pixels)
             continue
         try:
             synpts_path = write_synpts_microns(
-                swc_px, az_path, um_per_px=args.um_per_px
+                swc_path_pixels, az_path, um_per_px=args.um_per_px
             )
         except Exception as exc:
             failures += 1
-            logger.exception("Failed synpts for %s: %s", stem, exc)
-            print(f"error: failed synpts {stem}: {exc}", file=sys.stderr)
+            logger.exception("Failed synpts for %s: %s", spine_id, exc)
+            print(f"error: failed synpts {spine_id}: {exc}", file=sys.stderr)
             continue
         print(f"synpts: {synpts_path}")
 

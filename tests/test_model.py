@@ -171,12 +171,12 @@ class TestMakeDefaultParameterBank:
 
     def test_creates_parameter_bank(self):
         """Test that parameter bank is created."""
-        pb = make_default_parameter_bank()
-        assert isinstance(pb, ParameterBank)
+        parameter_bank = make_default_parameter_bank()
+        assert isinstance(parameter_bank, ParameterBank)
 
     def test_contains_required_parameters(self):
         """Test that required parameters are present."""
-        pb = make_default_parameter_bank()
+        parameter_bank = make_default_parameter_bank()
         required_params = [
             "seed",
             "T_ms",
@@ -191,12 +191,12 @@ class TestMakeDefaultParameterBank:
             "effexc_gmax_uS",
         ]
         for param in required_params:
-            assert param in pb.parameters
+            assert param in parameter_bank.parameters
 
     def test_default_values(self):
         """Test that default values are reasonable after sampling."""
-        pb = make_default_parameter_bank()
-        pset = pb.sample()
+        parameter_bank = make_default_parameter_bank()
+        pset = parameter_bank.sample()
         assert pset["T_ms"] == 1000.0
         assert pset["dt_sim_ms"] == 0.02
         assert pset["ampa_gmax_uS"] == 0.002
@@ -205,8 +205,8 @@ class TestMakeDefaultParameterBank:
         """Test that derived tau_m_ms is computed by sample()."""
         from toric_spines_sim.simulation.parameters import get_tau_m
 
-        pb = make_default_parameter_bank()
-        pset = pb.sample()
+        parameter_bank = make_default_parameter_bank()
+        pset = parameter_bank.sample()
         assert pset["tau_m_ms"] == get_tau_m(pset)
 
 
@@ -377,17 +377,17 @@ class TestPrepareGapJunctions:
 
     def test_prepare_with_custom_weight(self, sample_swc_file):
         """Test preparation with custom weight."""
-        pb = make_default_parameter_bank()
-        pb["gj_weight"].value = 2.0
-        pset = pb.sample()
+        parameter_bank = make_default_parameter_bank()
+        parameter_bank["gj_weight"].value = 2.0
+        pset = parameter_bank.sample()
         gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
         assert gap_junctions["gj_0"].weight == 2.0
 
     def test_prepare_with_parameters(self, sample_swc_file):
         """Test preparation with sampled parameters."""
-        pb = make_default_parameter_bank()
-        pb["gj_weight"].value = 1.5
-        pset = pb.sample()
+        parameter_bank = make_default_parameter_bank()
+        parameter_bank["gj_weight"].value = 1.5
+        pset = parameter_bank.sample()
         gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
         assert gap_junctions["gj_0"].weight == 1.5
 

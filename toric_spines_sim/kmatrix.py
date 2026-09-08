@@ -240,11 +240,30 @@ def compute_pairwise_voltages(
 
 
 def solve_k_linreg(v_1, v_2, v_12):
-    """Solve for k using linear regression, combining trials.
+    """Fit ``V_ij - V_i - V_j = k * V_i * V_j`` with a linear regression.
 
-    a = v_1 * v_2
-    b = v_12 - v_1 - v_2
-    Fit b = k * a + intercept.
+    Flattened arrays from one or more seeds are pooled. The slope is ``k``;
+    an intercept is also returned (usually near zero).
+
+    Parameters
+    ----------
+    v_1, v_2, v_12 : array_like
+        Baseline-subtracted voltages for synapse i, j, and both.
+
+    Returns
+    -------
+    dict
+        ``coeffs`` (slope, intercept), ``uncertainty``, and the flattened
+        ``a = v_1*v_2``, ``b = v_12-v_1-v_2`` used in the fit.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> v_1 = np.array([1.0, 2.0])
+    >>> v_2 = np.array([1.0, 2.0])
+    >>> v_12 = v_1 + v_2 + 0.5 * v_1 * v_2
+    >>> solve_k_linreg(v_1, v_2, v_12)["coeffs"][0]
+    np.float64(0.5)
     """
     a = (v_1 * v_2).flatten()
     b = (v_12 - v_1 - v_2).flatten()
@@ -269,7 +288,52 @@ def compute_k_matrix(
     probe_label: str = "probe_0",
     event_type: str = "poisson",
 ) -> Dict:
-    """Fill a symmetric k-matrix over an outer product of rates for one pair."""
+    """Fill a symmetric k-matrix over an outer product of rates for one pair.
+
+    For each unordered rate pair ``(rate_list[i], rate_list[j])`` with
+    ``j <= i``, run ``compute_pairwise_voltages`` and store the fitted ``k``.
+
+    Parameters
+    ----------
+    total_synapses : int
+        Length of the synapse points file (inactive synapses get rate 0).
+    active_synapse_pair : tuple of int
+        0-based indices ``(i, j)`` of the two synapses that fire.
+    rate_list : list of float
+        Rates (Hz) whose outer product fills the matrix.
+    swc_filepath, synpts_filepath : str
+        Morphology and synapse-point files.
+    parameter_bank : ParameterBank
+        Mutated in place for ``T_ms`` / ``seed`` during the sweep.
+    record_location : tuple of float
+        Probe XYZ (often the sink tip).
+    seeds : list of int
+        Poisson seeds averaged in the linear fit.
+    probe_label : str
+        Column name in ``SimulationResults.voltage_traces``.
+    event_type : {'poisson', 'periodic'}
+
+    Returns
+    -------
+    dict
+        ``k_matrix``, ``k_unc_matrix``, per-pair ``sim_results``,
+        ``rate_pair_list``, and ``intersynapse_distance``.
+
+    Examples
+    --------
+    >>> out = compute_k_matrix(  # doctest: +SKIP
+    ...     total_synapses=25,
+    ...     active_synapse_pair=(0, 1),
+    ...     rate_list=[10.0, 50.0],
+    ...     swc_filepath="data/swc/microns/TS1_wsink_r10um.swc",
+    ...     synpts_filepath="data/pointsets/microns/TS1_synpts.txt",
+    ...     parameter_bank=bank,
+    ...     record_location=(0.0, 0.0, 0.0),
+    ...     seeds=[0, 1],
+    ... )
+    >>> out["k_matrix"].shape
+    (2, 2)
+    """
     n_rates = len(rate_list)
     k_matrix = np.zeros((n_rates, n_rates))
     k_unc_matrix = np.zeros((n_rates, n_rates))

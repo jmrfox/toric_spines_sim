@@ -51,7 +51,7 @@ def make_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Override polylines path (only valid with a single mesh argument; "
-            "default: data/skeletons/<stem>.polylines.txt)"
+            "default: data/skeletons/<spine_id>.polylines.txt)"
         ),
     )
     parser.add_argument(
@@ -60,7 +60,7 @@ def make_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Override SWC output path (only valid with a single mesh argument; "
-            "default: data/swc/pixels/<stem>.swc)"
+            "default: data/swc/pixels/<spine_id>.swc)"
         ),
     )
     parser.add_argument(

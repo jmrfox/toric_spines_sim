@@ -13,23 +13,29 @@ def load_xyz_points(value: Union[str, Path]) -> List[Tuple[float, float, float]]
 
     Each row must contain at least 3 values (x, y, z). Extra columns are ignored.
 
-    Args:
-        value: Path to the coordinate file.
+    Parameters
+    ----------
+    value : path-like
+        Path to the coordinate file.
 
-    Returns:
-        List of (x, y, z) tuples.
+    Returns
+    -------
+    list of tuple of float
+        ``(x, y, z)`` rows.
 
-    Raises:
-        ValueError: If the file is empty or rows have fewer than 3 values.
+    Raises
+    ------
+    ValueError
+        If the file is empty or rows have fewer than 3 values.
     """
     arr = np.loadtxt(str(value))
     arr = np.asarray(arr, dtype=float)
     if arr.size == 0:
-        raise ValueError("neck point file is empty")
+        raise ValueError("coordinate file is empty")
     if arr.ndim == 1:
         arr = arr.reshape(1, -1)
     if arr.shape[1] < 3:
-        raise ValueError("each neck point line must contain at least 3 values: x y z")
+        raise ValueError("each line must contain at least 3 values: x y z")
     pts: List[Tuple[float, float, float]] = []
     for row in arr:
         pts.append((float(row[0]), float(row[1]), float(row[2])))
@@ -37,13 +43,7 @@ def load_xyz_points(value: Union[str, Path]) -> List[Tuple[float, float, float]]
 
 
 def equal_vectors(v1: Sequence[float], v2: Sequence[float], tol: float = 1e-6) -> bool:
-    """Return True if two vectors are equal within a tolerance.
-
-    Args:
-        v1: First vector.
-        v2: Second vector.
-        tol: Tolerance for comparison (L2 norm of difference).
-    """
+    """Return True if two vectors are equal within L2 tolerance ``tol``."""
     v1 = np.array(v1)
     v2 = np.array(v2)
     return bool(np.linalg.norm(v1 - v2) < tol)
@@ -69,6 +69,13 @@ def join_tags_dsl(tags: Sequence[int]) -> str:
     ------
     ValueError
         If *tags* is empty.
+
+    Examples
+    --------
+    >>> join_tags_dsl([3])
+    '(tag 3)'
+    >>> join_tags_dsl([3, 5, 6])
+    '(join (join (tag 3) (tag 5)) (tag 6))'
     """
     if len(tags) == 0:
         raise ValueError("tags must be non-empty")
@@ -136,6 +143,7 @@ def read_nff_s_points(
 
 def read_nff_points_and_write_txt_file(
     input_path: Union[str, Path], output_path: Union[str, Path]
-):
+) -> None:
+    """Write NFF ``s`` points as a whitespace-delimited XYZ text file."""
     points = read_nff_s_points(input_path)
     np.savetxt(output_path, points, fmt="%.3f")

@@ -53,7 +53,7 @@ def run_axons_dash(
     active_axons = scenario.metadata.get("active_axons", [])
     axon_suffix = "_".join(str(a) for a in sorted(active_axons)) or "all"
     title = (
-        f"{config.stem} vary axons ({scenario_label}, axons {axon_suffix})"
+        f"{config.spine_id} vary axons ({scenario_label}, axons {axon_suffix})"
     )
 
     dashboard_data = prepare_simulation_dashboard_data(

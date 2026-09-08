@@ -13,7 +13,7 @@ sudo apt install libsuitesparse-dev
 brew install suite-sparse
 ```
 
-You can process one stem (`TS1.obj`) or every `TS*.obj` (`--all`). Review notebooks live under `notebooks/ts_morphology/`.
+You can process one spine (`TS1.obj`) or every `TS*.obj` (`--all`). A worked example on TS1 is `notebooks/tutorial/` (`01_meshes`–`07_synapses`). Set `SHOW_ALL = True` in those notebooks to review every spine.
 
 ## 1. Organize meshes
 
@@ -28,13 +28,13 @@ uv run python scripts/skeletonize_meshes.py TS1.obj
 uv run python scripts/skeletonize_meshes.py --all
 ```
 
-Review mesh vs skeleton in `notebooks/ts_morphology/view_skeletons`.
+Review mesh vs skeleton in `notebooks/tutorial/02_skeletonization_basic` (`SHOW_ALL = True`).
 
 ## 3. Fit SWC cables
 
 mascaf fit → `data/swc/pixels/TS{id}.swc`. SWC is a tree, so cycle-forming node pairs are stored as `# CYCLE_BREAK` (and `# MULTI_NECK` when needed) comments. Those directives are read when building the Arbor model so loops become gap junctions.
 
-`FitOptions.max_edge_length` (MEL) is the maximum MorphologyGraph edge length in mesh coordinates. Larger MEL → coarser compartments. This repo sets MEL to a fraction of the mesh bounding-box diagonal (`--max-edge-length-frac`, default 0.08) so spines of different sizes share a relative resolution. Prefer the largest MEL that still matches mesh structure, volume, and surface area. `--basis-optimize` runs mascaf’s basis refinement before radius fitting.
+`FitOptions.max_edge_length` is the maximum MorphologyGraph edge length in mesh coordinates. A larger maximum edge length produces coarser compartments. This repo sets it to a fraction of the mesh bounding-box diagonal (`--max-edge-length-frac`, default 0.08) so spines of different sizes share a relative resolution. Prefer the largest maximum edge length that still matches mesh structure, volume, and surface area. `--basis-optimize` runs mascaf’s basis refinement before radius fitting.
 
 ![mascaf fit: mesh + skeleton → MorphologyGraph → radii → SWC](assets/mascaf-fit-pipeline.png)
 
@@ -43,7 +43,7 @@ uv run python scripts/fit_swc.py TS1.obj
 uv run python scripts/fit_swc.py --all --basis-optimize --verbose
 ```
 
-Review mesh vs SWC in `notebooks/ts_morphology/view_fitted_swc`.
+Review mesh vs SWC in `notebooks/tutorial/04_swc_cable_fit` (`SHOW_ALL = True`).
 
 ## 4. Neckpoints (recommended before the sink)
 
@@ -71,7 +71,7 @@ uv run python scripts/append_sink.py --all
 uv run python scripts/append_sink.py TS1 --radius-um 20
 ```
 
-Review in `notebooks/ts_morphology/view_wsink_swcs`. SWC tags used throughout: spine=3, sink=5, sink tip=6.
+Review in `notebooks/tutorial/05_neck_points`, `06_sink_attachment`, and `07_synapses` (`SHOW_ALL = True` on the sink gallery). SWC tags used throughout: spine=3, sink=5, sink tip=6.
 
 ## 6. Synapse coordinates (for simulation)
 

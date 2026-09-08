@@ -17,15 +17,26 @@ from toric_spines_sim.model.gj import GapJunctionPoint
 
 
 class TSRecipe(A.recipe):
-    """Arbor recipe for toric spines models with per-synapse event streams.
+    """Arbor recipe for a single toric-spine cell with per-synapse events.
 
     Parameters
     ----------
-    cell : A.cable_cell
-        The cell constructed from ``TSModel.build_cell()``.
-    events : TsGroup | Dict[str, List[float]] | None
-        Optional TsGroup or dict mapping synapse labels to event times (ms).
-        TsGroup is preferred; dict is supported for backward compatibility.
+    cell : arbor.cable_cell
+        Cell from ``TSModel.build_cell()["cell"]``.
+    synapses : dict[str, SynapsePoint]
+        Synapse labels used as Arbor place tags (typically ``syn_0``, …).
+    gap_junctions : dict[str, GapJunctionPoint]
+        Gap junctions for CYCLE_BREAK / MULTI_NECK reconnects.
+    record_points : dict[str, tuple]
+        Voltage probe labels and XYZ positions.
+    events : pynapple.TsGroup or dict[str, list[float]], optional
+        Event times in milliseconds. A TsGroup is mapped by **index** to
+        ``list(synapses.keys())`` order, not by channel label. A dict maps
+        synapse labels to time lists directly.
+    parameters : ParameterSet
+        Required sampled bank (ions, leak, temperature, …).
+    custom_catalogue : arbor.catalogue, optional
+        Extra NMODL mechanisms (ampa, nmda, hhnotemp, …).
     """
 
     def __init__(
@@ -39,6 +50,11 @@ class TSRecipe(A.recipe):
         custom_catalogue: Optional[A.catalogue] = None,
     ):
         super().__init__()
+        if parameters is None:
+            raise TypeError(
+                "TSRecipe requires a ParameterSet (ion concentrations and "
+                "reversal potentials). Pass parameters= from a sampled parameter bank."
+            )
         self._cell = cell
         self._synapses = synapses
         self._gap_junctions = gap_junctions
@@ -52,17 +68,10 @@ class TSRecipe(A.recipe):
         else:
             self._events_ms = events
 
-        # process cell parameters
-        if self._parameters is not None:
-            Vrest = self._parameters["Vrest_mV"] * U.mV
-            tempK = self._parameters["temp_K"] * U.Kelvin
-            cm = self._parameters["cm_uF_per_cm2"] * U.uF / U.cm2
-            rL = self._parameters["rL_ohm_cm"] * U.Ohm * U.cm
-        else:  # default values
-            Vrest = -65 * U.mV
-            tempK = 280 * U.Kelvin
-            cm = 1.0 * U.uF / U.cm2
-            rL = 35.4 * U.Ohm * U.cm
+        Vrest = self._parameters["Vrest_mV"] * U.mV
+        tempK = self._parameters["temp_K"] * U.Kelvin
+        cm = self._parameters["cm_uF_per_cm2"] * U.uF / U.cm2
+        rL = self._parameters["rL_ohm_cm"] * U.Ohm * U.cm
 
         # Global properties (passive defaults; catalog)
         self._gprop = A.cable_global_properties()
@@ -124,14 +133,9 @@ class TSRecipe(A.recipe):
     def _tsgroup_to_dict(
         self, tsgroup: nap.TsGroup, synapse_labels: List[str]
     ) -> Dict[str, List[float]]:
-        """Convert TsGroup to dict mapping synapse labels to event times.
+        """Map TsGroup index ``i`` to ``synapse_labels[i]`` (not channel labels).
 
-        Args:
-            tsgroup: TsGroup with event timestamps
-            synapse_labels: Ordered list of synapse labels to map indices to
-
-        Returns:
-            Dict mapping synapse label to list of event times in milliseconds
+        Pynapple stores times in seconds; returned lists are milliseconds.
         """
         result = {}
         for idx, ts in tsgroup.items():

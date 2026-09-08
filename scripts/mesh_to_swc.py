@@ -40,13 +40,13 @@ def make_parser() -> argparse.ArgumentParser:
         "--polylines",
         type=str,
         default=None,
-        help="Output/input polylines path (default: data/skeletons/<stem>.polylines.txt)",
+        help="Output/input polylines path (default: data/skeletons/<spine_id>.polylines.txt)",
     )
     parser.add_argument(
         "--swc",
         type=str,
         default=None,
-        help="Output SWC path (default: data/swc/pixels/<stem>.swc)",
+        help="Output SWC path (default: data/swc/pixels/<spine_id>.swc)",
     )
     parser.add_argument(
         "--profile",

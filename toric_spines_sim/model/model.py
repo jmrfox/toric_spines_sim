@@ -1,6 +1,6 @@
 """Morphology specification and cell building for toric spine models.
 
-``TSModel`` loads an SWC (typically ``TS*_wsink_r*um.swc``), paints passive
+``TSModel`` loads an SWC (typically ``TS*_wsink_r*um.swc``), applies passive
 leak (and optional HH), and places synapses, gap junctions, and voltage
 probes. Gap junctions restore SWC cycle-breaks and extra necks: each pair of
 SWC node IDs is mapped to distinct Arbor locations on the segment tree.
@@ -60,12 +60,25 @@ class TSModel:
     parameters: ParameterSet
 
     def build_cell(self) -> dict[str, object]:
-        """Construct an Arbor cable_cell from the SWC and explicit placements.
+        """Construct an Arbor cable cell from the SWC and explicit placements.
 
         Returns
         -------
-        cell : A.cable_cell
-            The fully constructed cell with placements.
+        dict
+            Intermediate objects keyed by:
+
+            - ``cell`` : ``arbor.cable_cell``
+            - ``morphology`` : ``arbor.morphology``
+            - ``segment_tree`` : ``arbor.segment_tree``
+            - ``decor`` : ``arbor.decor``
+            - ``labels`` : ``arbor.label_dict``
+            - ``cvp`` : CV policy
+            - ``custom_catalogue`` : loaded NMODL catalogue
+
+        Examples
+        --------
+        >>> build_result = model.build_cell()  # doctest: +SKIP
+        >>> cell = build_result["cell"]
         """
         # Load pre-built custom mechanism catalogue (ampasyn, nmdasyn, hhnotemp, ...)
         if not CUSTOM_CATALOGUE_PATH.is_file():

@@ -514,7 +514,29 @@ def compute_neck_candidates(
     cell_mesh,
     params: Optional[NeckpointParams] = None,
 ) -> list[NeckCandidate]:
-    """Detect neck interfaces; apply ``params.max_necks`` truncation."""
+    """Detect neck interfaces between a spine mesh and the parent cell mesh.
+
+    Tries planar cap detection first, then attachment-face and boundary-loop
+    fallbacks. ``params.max_necks`` truncates the ranked list.
+
+    Parameters
+    ----------
+    ts_mesh, cell_mesh
+        Trimesh objects (spine and local cell).
+    params : NeckpointParams, optional
+        Thresholds, crop margin, and ``max_necks``.
+
+    Returns
+    -------
+    list of NeckCandidate
+        Largest-first after truncation.
+
+    Examples
+    --------
+    >>> cands = compute_neck_candidates(ts, cell, NeckpointParams(max_necks=2))  # doctest: +SKIP
+    >>> cands[0].centroid.shape
+    (3,)
+    """
     params = params or NeckpointParams()
     local = _crop_local_cell(cell_mesh, ts_mesh, params.crop_margin)
     candidates = _cap_candidates(ts_mesh, cell_mesh, local, params)
@@ -538,13 +560,13 @@ def compute_neck_points(
     return [c.centroid.copy() for c in compute_neck_candidates(ts_mesh, cell_mesh, params)]
 
 
-def default_neckpoint_path(stem: str) -> Path:
-    """Pixel-space neckpoint path for a mesh stem (e.g. ``TS1``)."""
-    return get_pointset_path(f"{stem}_neckpoint.txt", units="pixels")
+def default_neckpoint_path(spine_id: str) -> Path:
+    """Pixel-space neckpoint path for a mesh spine id (e.g. ``TS1``)."""
+    return get_pointset_path(f"{spine_id}_neckpoint.txt", units="pixels")
 
 
-def compute_neck_points_for_stem(
-    stem: PathLike,
+def compute_neck_points_for_spine(
+    spine_id: PathLike,
     *,
     cell_mesh_path: Optional[PathLike] = None,
     params: Optional[NeckpointParams] = None,
@@ -552,18 +574,18 @@ def compute_neck_points_for_stem(
     overwrite: bool = True,
     output_path: Optional[PathLike] = None,
 ) -> list[tuple[float, float, float]]:
-    """Compute neckpoints for one TS mesh stem and optionally write the pixel file.
+    """Compute neckpoints for one TS mesh and optionally write the pixel file.
 
     Parameters
     ----------
-    stem
-        Mesh stem, filename, or path (e.g. ``TS1``, ``TS1.obj``).
+    spine_id
+        Mesh spine id, filename, or path (e.g. ``TS1``, ``TS1.obj``).
     cell_mesh_path
         Full cell mesh; defaults to ``cell_wrapped_simplified.obj``.
     params
         Detection parameters including ``max_necks``.
     write
-        If True, write ``data/pointsets/pixels/<stem>_neckpoint.txt``.
+        If True, write ``data/pointsets/pixels/<spine_id>_neckpoint.txt``.
     overwrite
         If False and the output exists, skip writing and return existing points
         only when write would be skipped after a successful compute — still
@@ -572,8 +594,8 @@ def compute_neck_points_for_stem(
         Override output path.
     """
     params = params or NeckpointParams()
-    mesh_path = resolve_mesh_path(stem)
-    stem_name = mesh_path.stem
+    mesh_path = resolve_mesh_path(spine_id)
+    resolved_spine_id = mesh_path.stem
     cell_path = (
         Path(cell_mesh_path)
         if cell_mesh_path is not None
@@ -581,18 +603,22 @@ def compute_neck_points_for_stem(
     )
     if not cell_path.is_file():
         # Allow bare name under data/mesh/
-        alt = get_mesh_path(Path(cell_path).name)
-        if alt.is_file():
-            cell_path = alt
+        resolved_cell_path = get_mesh_path(Path(cell_path).name)
+        if resolved_cell_path.is_file():
+            cell_path = resolved_cell_path
         else:
             raise FileNotFoundError(f"Cell mesh not found: {cell_path}")
 
-    out = Path(output_path) if output_path is not None else default_neckpoint_path(stem_name)
-    if write and out.exists() and not overwrite:
-        logger.info("Skipping existing neckpoint file: %s", out)
+    neckpoint_output_path = (
+        Path(output_path)
+        if output_path is not None
+        else default_neckpoint_path(resolved_spine_id)
+    )
+    if write and neckpoint_output_path.exists() and not overwrite:
+        logger.info("Skipping existing neckpoint file: %s", neckpoint_output_path)
         from toric_spines_sim.utils import load_xyz_points
 
-        return load_xyz_points(out)
+        return load_xyz_points(neckpoint_output_path)
 
     ts = _load_trimesh(mesh_path)
     cell = _load_trimesh(cell_path)
@@ -605,7 +631,7 @@ def compute_neck_points_for_stem(
         logger.info(
             "%s neck[%d] source=%s area=%.1f n=%d plan=%.3f signed=%.1f "
             "ray=%.2f dend=%.2f xyz=(%.3f, %.3f, %.3f)",
-            stem_name,
+            resolved_spine_id,
             i,
             cand.source,
             cand.area,
@@ -620,12 +646,12 @@ def compute_neck_points_for_stem(
         )
 
     if not points:
-        logger.warning("No neckpoints found for %s", stem_name)
+        logger.warning("No neckpoints found for %s", resolved_spine_id)
         return []
 
     if write:
-        write_xyz_points(out, points)
-        logger.info("Wrote %d neckpoint(s) to %s", len(points), out)
+        write_xyz_points(neckpoint_output_path, points)
+        logger.info("Wrote %d neckpoint(s) to %s", len(points), neckpoint_output_path)
     return points
 
 
@@ -642,7 +668,7 @@ def compute_neck_points_all(
     targets = resolve_mesh_targets(meshes, all_meshes=all_meshes)
     results: dict[str, list[tuple[float, float, float]]] = {}
     for mesh_path in targets:
-        results[mesh_path.stem] = compute_neck_points_for_stem(
+        results[mesh_path.stem] = compute_neck_points_for_spine(
             mesh_path,
             cell_mesh_path=cell_mesh_path,
             params=params,

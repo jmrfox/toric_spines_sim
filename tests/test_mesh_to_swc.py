@@ -64,7 +64,7 @@ class TestMeshToSwcOrchestration:
 
         mesh = temp_dir / "m.obj"
         mesh.write_text("v 0 0 0\n")
-        out = temp_dir / "m.polylines.txt"
+        output_path = temp_dir / "m.polylines.txt"
 
         fake_skel = MagicMock()
         load_and_repair = MagicMock(return_value="mesh-obj")
@@ -73,14 +73,14 @@ class TestMeshToSwcOrchestration:
             m, "_require_pymcfs", lambda: (load_and_repair, skeletonize)
         )
 
-        result = m.skeletonize_mesh(mesh, out, profile="auto", branching="sparse")
-        assert result == out.resolve()
+        result = m.skeletonize_mesh(mesh, output_path, profile="auto", branching="sparse")
+        assert result == output_path.resolve()
         load_and_repair.assert_called_once_with(str(mesh.resolve()))
         skeletonize.assert_called_once()
         assert skeletonize.call_args.kwargs.get("profile") == "auto"
         assert skeletonize.call_args.kwargs.get("branching") == "sparse"
         assert skeletonize.call_args.kwargs.get("extend_tips") is True
-        fake_skel.write_polylines.assert_called_once_with(str(out))
+        fake_skel.write_polylines.assert_called_once_with(str(output_path))
 
     def test_fit_swc_calls_mascaf(self, temp_dir, monkeypatch):
         import toric_spines_sim.geometry.mesh_pipeline as m

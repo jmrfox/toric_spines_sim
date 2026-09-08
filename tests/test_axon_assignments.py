@@ -11,13 +11,13 @@ from simulations.common.utils import count_assignment_axons, load_axon_topology
 
 # TS1 keeps its original 10-axon map; others round-robin into min(10, N).
 AXON_MAP_SPECS = {
-    "ts1": {"stem": "TS1", "n_synapses": 25, "n_axons": 10},
-    "ts2": {"stem": "TS2", "n_synapses": 6, "n_axons": 6},
-    "ts3": {"stem": "TS3", "n_synapses": 46, "n_axons": 10},
-    "ts4": {"stem": "TS4", "n_synapses": 23, "n_axons": 10},
-    "ts48": {"stem": "TS48", "n_synapses": 18, "n_axons": 10},
-    "ts67": {"stem": "TS67", "n_synapses": 8, "n_axons": 8},
-    "ts76": {"stem": "TS76", "n_synapses": 5, "n_axons": 5},
+    "ts1": {"spine_id": "TS1", "n_synapses": 25, "n_axons": 10},
+    "ts2": {"spine_id": "TS2", "n_synapses": 6, "n_axons": 6},
+    "ts3": {"spine_id": "TS3", "n_synapses": 46, "n_axons": 10},
+    "ts4": {"spine_id": "TS4", "n_synapses": 23, "n_axons": 10},
+    "ts48": {"spine_id": "TS48", "n_synapses": 18, "n_axons": 10},
+    "ts67": {"spine_id": "TS67", "n_synapses": 8, "n_axons": 8},
+    "ts76": {"spine_id": "TS76", "n_synapses": 5, "n_axons": 5},
 }
 
 
@@ -34,9 +34,9 @@ def _parse_assignment_file(path: Path) -> list[list[int]]:
 @pytest.mark.parametrize("sim_key", list(AXON_MAP_SPECS))
 def test_axon_assignment_covers_synpts(sim_key: str) -> None:
     spec = AXON_MAP_SPECS[sim_key]
-    stem = spec["stem"]
+    spine_id = spec["spine_id"]
     assignment_path = get_data_path("ts_axons", f"{sim_key}_axons.txt")
-    synpts_path = get_pointset_path(f"{stem}_synpts.txt", units="microns")
+    synpts_path = get_pointset_path(f"{spine_id}_synpts.txt", units="microns")
 
     assert assignment_path.is_file(), assignment_path
     n_synapses = len(load_xyz_points(synpts_path))
@@ -78,7 +78,7 @@ def test_model_config_n_axons_matches_file(sim_key: str) -> None:
     module = __import__(f"simulations.{sim_key}.inputs", fromlist=["MODEL"])
     model = module.MODEL
     spec = AXON_MAP_SPECS[sim_key]
-    assert model.stem == spec["stem"]
+    assert model.spine_id == spec["spine_id"]
     assert model.n_axons() == spec["n_axons"]
     assert model.swc_path().is_file()
     assert model.synpts_path().is_file()

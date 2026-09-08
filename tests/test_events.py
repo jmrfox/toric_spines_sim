@@ -687,11 +687,24 @@ class TestRateCurves:
         assert curve.max_rate() == 20.0
 
     def test_linear_rate_curve_rate_at(self):
-        """Test LinearRateCurve rate_at returns non-negative rate."""
+        """LinearRateCurve interpolates from start to end over T_ms."""
         curve = LinearRateCurve(rate_start_hz=10.0, rate_end_hz=20.0)
-        # Note: current implementation returns rate_start_hz for all t
-        # This is a known simplification
-        assert curve.rate_at(0.0) >= 0.0
+        assert curve.rate_at(0.0, T_ms=1000.0) == pytest.approx(10.0)
+        assert curve.rate_at(500.0, T_ms=1000.0) == pytest.approx(15.0)
+        assert curve.rate_at(1000.0, T_ms=1000.0) == pytest.approx(20.0)
+        assert curve.rate_at(-100.0, T_ms=1000.0) == pytest.approx(10.0)
+        assert curve.rate_at(2000.0, T_ms=1000.0) == pytest.approx(20.0)
+
+    def test_linear_rate_curve_rate_at_requires_T_ms(self):
+        curve = LinearRateCurve(rate_start_hz=10.0, rate_end_hz=20.0)
+        with pytest.raises(ValueError, match="requires T_ms"):
+            curve.rate_at(0.0)
+
+    def test_linear_rate_curve_rate_at_non_negative(self):
+        curve = LinearRateCurve(rate_start_hz=-5.0, rate_end_hz=5.0)
+        assert curve.rate_at(0.0, T_ms=1000.0) == pytest.approx(0.0)
+        assert curve.rate_at(500.0, T_ms=1000.0) == pytest.approx(0.0)
+        assert curve.rate_at(1000.0, T_ms=1000.0) == pytest.approx(5.0)
 
 
 class TestStochasticEventGeneratorSharedMode:

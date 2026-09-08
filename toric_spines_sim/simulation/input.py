@@ -1,9 +1,13 @@
+"""Axon assignment files, event remapping, and random axon rate curves."""
+
+import logging
+from pathlib import Path
+from typing import Tuple, List, Optional
+
 import numpy as np
 import pynapple as nap
-from typing import Tuple, List, Optional
-from pathlib import Path
+
 from toric_spines_sim.events import SineRateCurve, FlatRateCurve
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -12,23 +16,24 @@ def load_axon_events_from_file(
     axon_assignment_file: Path,
     axon_rates_hz: List[float],
 ) -> Tuple[List[FlatRateCurve], List[int], List[List[int]]]:
-    """Create axon rate curves from a synapse assignment file with periodic.
+    """Build per-axon flat rate curves from a synapse assignment file.
 
-    Reads a text file where each line corresponds to an axon and contains
-    comma-separated synapse indices (1-based) for that axon.
+    Each line is one axon: comma-separated **1-based** synapse indices.
 
-    Args:
-        axon_assignment_file: Path to text file with synapse assignments.
-            Format: one line per axon, each line is "syn1, syn2, syn3, ..."
-            Synapse indices are 1-based.
-        axon_rates_hz: List of rates for each axon (Hz). Length must match
-            number of lines in the file. Use 0.0 to turn an axon off.
+    Parameters
+    ----------
+    axon_assignment_file : path-like
+        Assignment file (one axon per line).
+    axon_rates_hz : list of float
+        Rate in Hz for each axon. Length must match the number of lines.
+        Use ``0.0`` to silence an axon.
 
-    Returns:
-        Tuple of ``(rate_curves, n_synapses_per_axon, axon_synapses)``:
-        - rate_curves: List of FlatRateCurve objects (one per axon)
-        - n_synapses_per_axon: List of synapse counts per axon
-        - axon_synapses: 0-based synapse index lists per axon
+    Returns
+    -------
+    rate_curves : list of FlatRateCurve
+    n_synapses_per_axon : list of int
+    axon_synapses : list of list of int
+        0-based synapse indices per axon (for ``remap_axon_channel_events_to_synapses``).
     """
     # Read synapse assignments from file
     axon_synapses = []
@@ -70,22 +75,33 @@ def remap_axon_channel_events_to_synapses(
     axon_synapses: List[List[int]],
     n_synapses: Optional[int] = None,
 ) -> nap.TsGroup:
-    """Map axon-ordered event channels to synapse point-file indices.
+    """Map axon-ordered event channels onto synapse point-file indices.
 
-    Event generators fan out channels in axon order (axon 0 synapses, then axon 1,
-    etc.), but the simulator maps TsGroup index ``i`` to synapse ``syn_i`` in the
-    order of the synapse points file. This function scatters axon-channel events
-    onto the correct synapse indices from an axon assignment file.
+    Event generators fan out channels in axon order (axon 0 synapses, then
+    axon 1, …), but ``TSRecipe`` maps TsGroup index ``i`` to synapse
+    ``syn_i``. This scatters axon-channel events onto the correct indices.
 
-    Args:
-        events_tsgroup: TsGroup with channels ordered by axon assignment.
-        axon_synapses: Per-axon lists of 0-based synapse indices (as returned
-            by ``load_axon_events_from_file``).
-        n_synapses: Total number of synapses. Defaults to
-            ``max(index) + 1`` over all assigned synapses.
+    Parameters
+    ----------
+    events_tsgroup : pynapple.TsGroup
+        Channels ordered by axon assignment (generator output).
+    axon_synapses : list of list of int
+        Per-axon 0-based synapse indices (from ``load_axon_events_from_file``).
+    n_synapses : int, optional
+        Total synapses. Defaults to ``max(index) + 1`` over assignments.
 
-    Returns:
-        TsGroup indexed by synapse point-file order (0 .. n_synapses - 1).
+    Returns
+    -------
+    pynapple.TsGroup
+        Indexed ``0 .. n_synapses-1`` with labels ``syn_0``, ``syn_1``, …
+
+    Examples
+    --------
+    >>> # Axon 0 hits synapses 2 then 0; axon 1 hits synapse 1
+    >>> axon_synapses = [[2, 0], [1]]
+    >>> remapped = remap_axon_channel_events_to_synapses(events, axon_synapses)  # doctest: +SKIP
+    >>> remapped.get_info("label")[0]
+    'syn_0'
     """
     expected_channels = sum(len(synapses) for synapses in axon_synapses)
     if len(events_tsgroup) != expected_channels:
@@ -136,24 +152,34 @@ def random_axon_events(
     mod_freq_hz: float,
     peak_rate_hz: float = None,
     peak_rate_range_hz: Tuple[float, float] = None,
-    phase_range_rad: Tuple[float, float] = None,
+    phase_range_rad: Tuple[float, float] = (0.0, 2.0 * np.pi),
     seed: int = 42,
 ) -> Tuple[List[SineRateCurve], List[int]]:
-    """Create random axon rate curves and assign synapses to axons.
+    """Create random sine rate curves and a random synapse-to-axon partition.
 
-    Args:
-        n_synapses: Total number of synapses
-        n_axons: Number of axons (must be <= n_synapses)
-        mod_freq_hz: Common frequency for all sine rate curves (Hz)
-        peak_rate_hz: Peak rate for all sine rate curves (Hz)
-        peak_rate_range_hz: (min, max) range for random peak rates
-        phase_range_rad: (min, max) range for random phases (default 0 to 2π)
-        seed: Random seed for reproducibility
+    Provide exactly one of ``peak_rate_hz`` or ``peak_rate_range_hz``.
 
-    Returns:
-        Tuple of (rate_curves, n_synapses_per_axon) where:
-        - rate_curves: List of SineRateCurve objects (one per axon)
-        - n_synapses_per_axon: List of synapse counts per axon
+    Parameters
+    ----------
+    n_synapses : int
+        Total number of synapses.
+    n_axons : int
+        Number of axons (must be ``<= n_synapses``).
+    mod_freq_hz : float
+        Common sine frequency (Hz).
+    peak_rate_hz : float, optional
+        Peak rate for every axon (Hz).
+    peak_rate_range_hz : tuple of float, optional
+        ``(min, max)`` from which each axon's peak is drawn.
+    phase_range_rad : tuple of float
+        Phase draw range in radians. Default ``(0, 2π)``.
+    seed : int
+        RNG seed.
+
+    Returns
+    -------
+    rate_curves : list of SineRateCurve
+    n_synapses_per_axon : list of int
     """
     if n_axons > n_synapses:
         raise ValueError(f"n_axons ({n_axons}) must be <= n_synapses ({n_synapses})")

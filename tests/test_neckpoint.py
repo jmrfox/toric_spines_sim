@@ -10,7 +10,7 @@ from toric_spines_sim.geometry.neckpoint import (
     NeckpointParams,
     _apply_max_necks,
     compute_neck_points,
-    compute_neck_points_for_stem,
+    compute_neck_points_for_spine,
     default_neckpoint_path,
 )
 from toric_spines_sim.paths import MESH_DIR, get_cell_mesh_path
@@ -172,13 +172,13 @@ class TestRealMeshes:
         if not gt_path.is_file():
             pytest.skip("Curated TS1 neckpoint missing")
         gt = np.loadtxt(gt_path).reshape(-1, 3)[0]
-        out = temp_dir / "TS1_neckpoint.txt"
-        points = compute_neck_points_for_stem(
+        output_path = temp_dir / "TS1_neckpoint.txt"
+        points = compute_neck_points_for_spine(
             "TS1.obj",
             params=NeckpointParams(max_necks=1),
             write=True,
             overwrite=True,
-            output_path=out,
+            output_path=output_path,
         )
         assert len(points) == 1
         err = float(np.linalg.norm(np.asarray(points[0]) - gt))

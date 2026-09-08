@@ -643,10 +643,32 @@ def build_from_toric_spine(
 
     Scale strategies (``match.scale_strategy``):
 
-    - ``relative`` (default): scale a typical-proportion template uniformly so SA
-      matches (preserves relative geometry).
-    - ``absolute_spines``: keep literature absolute spine sizes; solve trunk length
-      so SA matches.
+    - ``relative`` (default): scale a typical-proportion template uniformly so
+      SA matches (preserves relative geometry).
+    - ``absolute_spines``: keep literature absolute spine sizes; solve trunk
+      length so SA matches.
+
+    Parameters
+    ----------
+    swc_path : path-like
+        Toric-spine SWC (sink tags excluded from SA).
+    az_path : path-like
+        Active-zone XYZ file; one spine per point.
+    match : ToricSpineMatchParams, optional
+        Template proportions and scale strategy.
+    neck_path : path-like, optional
+        Recorded in diagnostics only (geometry uses a single proximal neck).
+
+    Returns
+    -------
+    SpinyDendriteMorphology
+        Synthetic morphology plus SA/volume diagnostics.
+
+    Examples
+    --------
+    >>> morph = build_from_toric_spine("TS1.swc", "TS1_AZ.txt")  # doctest: +SKIP
+    >>> morph.diagnostics["surface_area_rel_error"] < 0.05
+    True
     """
     match = match or ToricSpineMatchParams()
     swc_path = Path(swc_path)

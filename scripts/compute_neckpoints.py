@@ -2,7 +2,7 @@
 """Compute neckpoint(s) for toric-spine meshes using the full cell mesh.
 
 Compares each isolated ``TS*.obj`` to ``cell_wrapped_simplified.obj`` and writes
-pixel-space neckpoints to ``data/pointsets/pixels/<stem>_neckpoint.txt``.
+pixel-space neckpoints to ``data/pointsets/pixels/<spine_id>_neckpoint.txt``.
 
 Requires trimesh (``uv sync``).
 
@@ -22,7 +22,7 @@ import sys
 
 from toric_spines_sim.geometry.neckpoint import (
     NeckpointParams,
-    compute_neck_points_for_stem,
+    compute_neck_points_for_spine,
 )
 from toric_spines_sim.geometry.mesh_pipeline import resolve_mesh_targets
 from toric_spines_sim.paths import get_cell_mesh_path
@@ -35,7 +35,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "meshes",
         nargs="*",
-        help="Mesh path(s) or bare stems under data/mesh/ (e.g. TS1 or TS1.obj)",
+        help="Mesh path(s) or bare spine ids under data/mesh/ (e.g. TS1 or TS1.obj)",
     )
     parser.add_argument(
         "--all",
@@ -66,7 +66,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--no-overwrite",
         action="store_true",
-        help="Skip stems that already have a pixel neckpoint file",
+        help="Skip spines that already have a pixel neckpoint file",
     )
     parser.add_argument(
         "--verbose",
@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     n_ok = 0
     n_empty = 0
     for mesh_path in targets:
-        points = compute_neck_points_for_stem(
+        points = compute_neck_points_for_spine(
             mesh_path,
             cell_mesh_path=cell_mesh,
             params=params,

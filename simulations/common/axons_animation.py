@@ -53,7 +53,7 @@ def run_axons_animation(
     animation_file = (
         results_path
         / (
-            f"{config.stem}_axons_anim_{mode_suffix}_ax{axon_suffix}"
+            f"{config.spine_id}_axons_anim_{mode_suffix}_ax{axon_suffix}"
             f"{hh_suffix}.html"
         )
     )

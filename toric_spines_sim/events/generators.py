@@ -35,7 +35,11 @@ class DeterministicEventGenerator(EventGenerator):
         T_ms: Total simulation time in milliseconds.
         delay_ms: Time before events start (ms). Default: 0.0.
         labels: Optional labels for each output channel. Length must equal
-            ``sum(n_synapses_per_axon)``.
+            ``sum(n_synapses_per_axon)``. Default labels are ``A{a}S{s}``.
+            ``TSRecipe`` / ``TSSimulator`` ignore those labels and map by
+            TsGroup **index** to ``syn_0``, ``syn_1``, … — use
+            ``remap_axon_channel_events_to_synapses`` when axon assignments
+            are not point-file order.
         routing_mode: How to route master events to axons in shared mode.
             "broadcast": every master event goes to all axons.
             "roundrobin": events distributed cyclically among axons.
@@ -203,7 +207,10 @@ class StochasticEventGenerator(EventGenerator):
         delay_ms: Time before events start (ms). Default: 0.0.
         seed: Random seed for reproducibility. Default: None.
         labels: Optional labels for each output channel. Length must equal
-            ``sum(n_synapses_per_axon)``.
+            ``sum(n_synapses_per_axon)``. Default labels are ``A{a}S{s}``.
+            ``TSRecipe`` / ``TSSimulator`` map by TsGroup **index** to
+            ``syn_i``; use ``remap_axon_channel_events_to_synapses`` when
+            axon assignments are not point-file order.
         routing_weights: Probability of routing each master event to each axon.
             Only used in shared mode. Must sum to 1. Defaults to uniform.
         arp_ms: Absolute refractory period in ms. Can be scalar (same for all
@@ -373,7 +380,7 @@ class StochasticEventGenerator(EventGenerator):
         times: List[float] = []
 
         while t < end:
-            acceptance_prob = curve.rate_at(t) / rate_max
+            acceptance_prob = curve.rate_at(t, T_ms=self._T_ms) / rate_max
             if rng.random() < acceptance_prob:
                 times.append(float(t))
             t += rng.exponential(scale=scale_ms)

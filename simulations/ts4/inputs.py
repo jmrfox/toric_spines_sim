@@ -1,4 +1,4 @@
-"""User-editable input knobs for TS4 axon studies."""
+"""User-editable input options for TS4 axon studies."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from simulations.common.utils import RateCurveKind
 from simulations.ts4.params import make_parameter_bank
 
 MODEL = ModelConfig(
-    stem="TS4",
+    spine_id="TS4",
     sim_key="ts4",
     swc_name="TS4_wsink_r10um.swc",
     synpts_name="TS4_synpts.txt",
