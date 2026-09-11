@@ -15,7 +15,7 @@ An isolated toric-spine mesh is not a whole neuron. The working model is:
 
 Sanculi et al. reconstructed 76 toric spines on Type I SSNs (Type II cells have ordinary spines). Individual toric spines can collect many active zones from many axons, while remaining unconnected to most nearby axons — a candidate locus of integration and learning.
 
-A parallel comparison morphology — a synthetic dendrite with classical neck+head spines — lives in `toric_spines_sim.geometry.dendrite` (tutorial `19_spiny_dendrite`; older demo: `notebooks/misc/spiny_dendrite_demo`). [Neurosignature](neurosignature.md) compares systems by descriptors of input–output dynamics rather than by geometry. A full “SSN whole-cell” reconstruction pipeline is **not** in this repo; work here is isolated spines plus a sink.
+A parallel comparison morphology — a synthetic dendrite with classical neck+head spines — lives in `toric_spines_sim.geometry.dendrite` (tutorial `21_spiny_dendrite`; older demo: `notebooks/misc/spiny_dendrite_demo`). [Neurosignature](neurosignature.md) compares systems by descriptors of input–output dynamics rather than by geometry. A full “SSN whole-cell” reconstruction pipeline is **not** in this repo; work here is isolated spines plus a sink.
 
 ## Pipeline
 

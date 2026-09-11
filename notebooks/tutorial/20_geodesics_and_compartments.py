@@ -14,13 +14,13 @@
 # ---
 
 # %% [markdown]
-# # 18 — Geodesics and compartments
+# # 20 — Geodesics and compartments
 #
-# This notebook measures graph distances on a micron SWC from `data/` with
-# `# CYCLE_BREAK` reconnections restored. It reports path length from a
-# source XYZ, classifies nodes relative to a source→target path, and maps
-# probes back onto SWC nodes. Units match the SWC (use **microns** for
-# simulation files).
+# Graph distances on a micron SWC from `data/` (with `# CYCLE_BREAK`
+# reconnections restored) use `compute_geodesic_distances`. Compartment
+# labels relative to a source→target path use `classify_compartments`.
+# Probe XYZ maps back onto SWC nodes with `map_probes_to_nodes`. Units
+# match the SWC (microns for simulation files).
 
 # %%
 from toric_spines_sim.geometry import (
@@ -50,7 +50,7 @@ print("sink:", sink)
 
 # %%
 dist_from_neck = compute_geodesic_distances(swc_path, neck)
-print(f"{len(dist_from_neck)} reachable nodes")
+print("compute_geodesic_distances →", type(dist_from_neck).__name__, "n nodes:", len(dist_from_neck))
 print(f"max geodesic from neck: {max(dist_from_neck.values()):.2f} µm")
 print(f"min geodesic from neck: {min(dist_from_neck.values()):.2f} µm")
 
@@ -63,6 +63,7 @@ print(f"min geodesic from neck: {min(dist_from_neck.values()):.2f} µm")
 
 # %%
 classes = classify_compartments(swc_path, neck, sink, mode="path_based")
+print("classify_compartments →", type(classes).__name__, "n nodes:", len(classes))
 counts: dict[str, int] = {}
 for label in classes.values():
     counts[label] = counts.get(label, 0) + 1
@@ -79,7 +80,7 @@ print("path_based counts:", dict(sorted(counts.items())))
 # %%
 record_points = {"sink": sink, "neck": neck}
 probe_nodes = map_probes_to_nodes(swc_path, record_points)
-print("probe → node:", probe_nodes)
+print("map_probes_to_nodes →", type(probe_nodes).__name__, probe_nodes)
 
 named_syn = {f"syn_{i}": xyz for i, xyz in enumerate(synpts[:5])}
 syn_to_probe = map_xyz_to_nearest_probes(record_points, named_syn)

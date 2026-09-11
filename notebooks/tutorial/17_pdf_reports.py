@@ -14,10 +14,10 @@
 # ---
 
 # %% [markdown]
-# # 15 — PDF reports
+# # 17 — PDF reports
 #
-# `PdfReport` is a high-level interface around ReportLab. You accumulate a
-# title, headings, tables, and matplotlib or Plotly figures, then call
+# To assemble a letter-size PDF of titles, tables, and figures, use
+# `PdfReport` (a thin wrapper around ReportLab): `add_*` methods, then
 # `build()`. Production axon PDFs live in `simulations/ts{id}/`
 # (`python -m simulations.ts1.axons`). This notebook writes a short example
 # under `_artifacts/` and does not run Arbor.
@@ -55,6 +55,10 @@ sampled_parameters = {
 # %%
 pdf_path = tutorial_output_dir / "tutorial_report.pdf"
 report = PdfReport(str(pdf_path))
+print("PdfReport:", type(report).__name__)
+print("  output:", pdf_path)
+print("  content width (in):", report.content_width_in)
+print("  content max height (in):", report.content_max_height_in)
 report.add_title("Tutorial PDF example")
 report.add_heading("What this class does", level=1)
 report.add_paragraph(
@@ -71,4 +75,3 @@ report.add_simulation(
 )
 report.build()
 print("wrote", pdf_path)
-print("content width (in):", report.content_width_in)

@@ -16,16 +16,15 @@
 # %% [markdown]
 # # 01 — Meshes (paths, quality checks, repair)
 #
-# Closed triangle meshes live under `data/mesh/`: one file per spine
-# (`TS{id}.obj`) plus the parent cell `cell_wrapped_simplified.obj`. Path
-# helpers are in `toric_spines_sim.paths`. Mesh algorithms such as hole filling
-# belong to [trimesh](https://trimesh.org/) and
-# [pymcfs](https://github.com/jmrfox/pymcfs). This notebook covers this
-# project's files, basic quality checks, and the repair step the skeletonizer
-# already calls.
+# Mesh data lives under `data/mesh/`: one file per spine
+# (`TS{id}.obj`) plus the parent cell `cell_wrapped_simplified.obj`. To
+# resolve a path and load a `trimesh.Trimesh`, use the helpers in
+# `toric_spines_sim.paths`. A watertight mesh is the input to
+# `skeletonize_mesh` (see `pymcfs_basic`).
 #
-# IMOD surface reconstruction is documented separately
-# (`docs/reconstruction.md`). Skeletonization is notebook 02.
+# Hole filling belongs to [trimesh](https://trimesh.org/) and
+# [pymcfs](https://github.com/jmrfox/pymcfs). IMOD reconstruction:
+# `docs/reconstruction.md`.
 
 # %%
 import trimesh
@@ -49,6 +48,7 @@ print("MESH_DIR:", MESH_DIR)
 # %% [markdown]
 # ## Resolve paths
 #
+# The `paths` module is a convenience setup for grabbing paths within this repo.
 # `get_mesh_path("TS1.obj")` looks up a file under `data/mesh/`.
 # `resolve_mesh_path` also accepts a spine id (`TS1`) or an existing file path.
 # `resolve_mesh_targets` is what the command-line scripts use (`TS1` vs `--all`).
@@ -66,12 +66,11 @@ print("cell mesh:", cell_path, "exists" if cell_path.is_file() else "MISSING")
 # %% [markdown]
 # ## Load and quality checks
 #
-# pymcfs needs a watertight, single-component surface. Genus > 0 (topological
-# holes) is allowed — that is the point of toric spines.
-# On a closed surface, $\chi = 2 - 2g$.
+# pymcfs needs a watertight, single-component surface. 
 
 # %%
 mesh = trimesh.load(str(mesh_path), force="mesh", process=False)
+print("type:", type(mesh).__name__)
 print(f"file:       {mesh_path.name}")
 print(f"vertices:   {len(mesh.vertices)}")
 print(f"faces:      {len(mesh.faces)}")
@@ -112,3 +111,5 @@ for path in list_ts_meshes():
         f"F={len(other_mesh.faces):6d}  "
         f"watertight={other_mesh.is_watertight}  χ={other_mesh.euler_number}"
     )
+
+# %%

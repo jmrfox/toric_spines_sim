@@ -210,6 +210,30 @@ class TestMakeDefaultParameterBank:
         assert pset["tau_m_ms"] == get_tau_m(pset)
 
 
+class TestIcxParameterBanks:
+    """Sampled values for the in-vitro and in-vivo ICx banks."""
+
+    def test_invitro_biophysics(self):
+        from toric_spines_sim.simulation.parameters import (
+            make_icx_parameter_bank_invitro,
+        )
+
+        pset = make_icx_parameter_bank_invitro().sample()
+        assert pset["temp_K"] == 297.0
+        assert pset["pas_leak_g_S_per_cm2"] == 0.000144
+        assert pset["Vrest_mV"] == -67.6
+
+    def test_invivo_biophysics(self):
+        from toric_spines_sim.simulation.parameters import (
+            make_icx_parameter_bank_invivo,
+        )
+
+        pset = make_icx_parameter_bank_invivo().sample()
+        assert pset["temp_K"] == 313.0
+        assert pset["pas_leak_g_S_per_cm2"] == 0.00042
+        assert pset["Vrest_mV"] == -67.6
+
+
 class TestSynapsePoint:
     """Test suite for SynapsePoint dataclass."""
 
@@ -493,4 +517,62 @@ class TestReconnectAndGapJunctionMapping:
         )
         with pytest.raises(FileNotFoundError, match="make_custom_catalogue"):
             tsm.build_cell()
+
+
+class TestCheckCatalogue:
+    """Tests for check_catalogue."""
+
+    def test_required_mechanisms_match_mod_stems(self):
+        from toric_spines_sim.model.model import required_catalogue_mechanisms
+
+        names = required_catalogue_mechanisms()
+        assert names == [
+            "ampasyn",
+            "effexcsyn",
+            "gabaasyn",
+            "gababsyn",
+            "hhnotemp",
+            "nmdasyn",
+        ]
+
+    def test_missing_file(self, tmp_path):
+        from toric_spines_sim.model import check_catalogue
+
+        missing = tmp_path / "missing-catalogue.so"
+        with pytest.raises(FileNotFoundError, match="make_custom_catalogue"):
+            check_catalogue(path=missing)
+
+    def test_load_failure(self, monkeypatch, tmp_path):
+        from toric_spines_sim.model import check_catalogue
+        from toric_spines_sim.model import model as model_mod
+
+        fake_so = tmp_path / "broken-catalogue.so"
+        fake_so.write_bytes(b"not a shared library")
+
+        def boom(_path):
+            raise OSError("incompatible catalogue")
+
+        monkeypatch.setattr(model_mod.A, "load_catalogue", boom)
+        with pytest.raises(RuntimeError, match="Could not load NMODL catalogue"):
+            check_catalogue(path=fake_so)
+
+    def test_missing_mechanism(self, monkeypatch, tmp_path):
+        from toric_spines_sim.model import check_catalogue
+        from toric_spines_sim.model import model as model_mod
+
+        fake_so = tmp_path / "incomplete-catalogue.so"
+        fake_so.write_bytes(b"placeholder")
+
+        class EmptyCatalogue:
+            def __contains__(self, name):
+                return False
+
+            def __getitem__(self, name):
+                raise KeyError(name)
+
+        monkeypatch.setattr(
+            model_mod.A, "load_catalogue", lambda _path: EmptyCatalogue()
+        )
+        with pytest.raises(RuntimeError, match="missing mechanisms"):
+            check_catalogue(path=fake_so)
 

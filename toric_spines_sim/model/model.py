@@ -33,6 +33,71 @@ from .gj import GapJunctionPoint
 CUSTOM_CATALOGUE_PATH = (
     Path(__file__).parent.parent / "mechanisms" / "custom-catalogue.so"
 )
+CATALOGUE_SOURCE_DIR = Path(__file__).parent.parent / "mechanisms" / "my_catalogue"
+_CATALOGUE_BUILD_CMD = "uv run bash scripts/make_custom_catalogue.sh"
+
+
+def required_catalogue_mechanisms() -> list[str]:
+    """NMODL mechanism names compiled from ``mechanisms/my_catalogue/*.mod``."""
+    return sorted(path.stem for path in CATALOGUE_SOURCE_DIR.glob("*.mod"))
+
+
+def _catalogue_has_mechanism(catalogue: A.catalogue, name: str) -> bool:
+    try:
+        return name in catalogue
+    except Exception:
+        try:
+            catalogue[name]
+            return True
+        except Exception:
+            return False
+
+
+def check_catalogue(path: Path | None = None) -> A.catalogue:
+    """Load the custom NMODL catalogue, or raise if it is missing or unusable.
+
+    Checks that ``custom-catalogue.so`` exists, that Arbor can load it, and
+    that every mechanism in ``mechanisms/my_catalogue/*.mod`` is present.
+    Rebuild after changing ``.mod`` files, upgrading Arbor, or changing
+    OS/compiler; do not copy a ``.so`` between machines.
+
+    Parameters
+    ----------
+    path : Path, optional
+        Catalogue file. Default: ``CUSTOM_CATALOGUE_PATH``.
+
+    Returns
+    -------
+    arbor.catalogue
+    """
+    catalogue_path = Path(path) if path is not None else CUSTOM_CATALOGUE_PATH
+    if not catalogue_path.is_file():
+        raise FileNotFoundError(
+            f"Custom mechanism catalogue not found at {catalogue_path}. "
+            "Build it from the repository root (see README Getting started):\n"
+            f"  {_CATALOGUE_BUILD_CMD}"
+        )
+    logger.info("Loading custom catalogue from %s", catalogue_path)
+    try:
+        catalogue = A.load_catalogue(str(catalogue_path))
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not load NMODL catalogue at {catalogue_path}. "
+            "Rebuild after changing .mod files, upgrading Arbor, or changing "
+            "OS/compiler. Do not copy a .so between machines.\n"
+            f"  {_CATALOGUE_BUILD_CMD}"
+        ) from exc
+    expected = required_catalogue_mechanisms()
+    missing = [
+        name for name in expected if not _catalogue_has_mechanism(catalogue, name)
+    ]
+    if missing:
+        raise RuntimeError(
+            f"Catalogue at {catalogue_path} is missing mechanisms {missing}. "
+            f"Expected {expected}. Rebuild with:\n"
+            f"  {_CATALOGUE_BUILD_CMD}"
+        )
+    return catalogue
 
 
 @dataclass
@@ -81,14 +146,7 @@ class TSModel:
         >>> cell = build_result["cell"]
         """
         # Load pre-built custom mechanism catalogue (ampasyn, nmdasyn, hhnotemp, ...)
-        if not CUSTOM_CATALOGUE_PATH.is_file():
-            raise FileNotFoundError(
-                f"Custom mechanism catalogue not found at {CUSTOM_CATALOGUE_PATH}. "
-                "Build it from the repository root (see README Getting started):\n"
-                "  uv run bash scripts/make_custom_catalogue.sh"
-            )
-        logger.info("Loading custom catalogue from %s", CUSTOM_CATALOGUE_PATH)
-        custom_catalogue = A.load_catalogue(str(CUSTOM_CATALOGUE_PATH))
+        custom_catalogue = check_catalogue()
         
         # Load swc morphology (fallback for older Arbor without raw=True)
         logger.info(

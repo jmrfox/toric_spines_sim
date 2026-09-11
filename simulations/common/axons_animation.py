@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.simulation import TSSimulator
 from toric_spines_sim.viz import Animation
 
@@ -25,6 +26,7 @@ def run_axons_animation(
     dt_record_ms: float | None = None,
 ) -> Path:
     """Run one scenario on ``config`` and write an HTML voltage animation."""
+    check_catalogue()
     logger.info("Scenario: %s", scenario.metadata)
 
     parameters = scenario.parameters

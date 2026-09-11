@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import pynapple as nap
 
+from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.report import PdfReport
 from toric_spines_sim.viz import RasterPlotter
 from toric_spines_sim.simulation import (
@@ -1258,6 +1259,7 @@ def _apply_config(config: ModelConfig) -> None:
 
 def run_axons_study(config: ModelConfig) -> Path:
     """Run the axon PDF study for ``config`` and return the report path."""
+    check_catalogue()
     _apply_config(config)
     assert swc_filepath is not None
     assert synpts_filepath is not None

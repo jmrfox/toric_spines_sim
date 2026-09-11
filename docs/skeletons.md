@@ -25,7 +25,7 @@ uv run python scripts/skeletonize_meshes.py TS1.obj
 uv run python scripts/skeletonize_meshes.py --all
 ```
 
-Output: `data/skeletons/TS{id}.polylines.txt`. Review in `notebooks/tutorial/02_skeletonization_basic` (`SHOW_ALL = True`).
+Output: `data/skeletons/TS{id}.polylines.txt`. Review in `notebooks/tutorial/02_pymcfs_basic` (`SHOW_ALL = True`).
 
 `profile="auto"` automatically chooses contraction settings (including the quality / medial-centering tradeoff). Those options are not the same as CGALLab’s raw QST/MCST sliders; do not paste CGALLab numbers into pymcfs and expect the same contract. If a skeleton is bad, change `--branching` (`sparse` / `balanced` / `dense`) or inspect the mesh for watertightness before hunting scalar weights.
 

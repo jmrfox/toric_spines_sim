@@ -22,7 +22,7 @@ MODEL = ModelConfig(
     synpts_name="TS1_synpts.txt",
     axon_assignment_file=get_data_path("ts_axons", "ts1_axons.txt"),
     make_parameter_bank=make_parameter_bank,
-    sequential_axon_order=[5, 6, 9, 8, 2, 4, 7, 1, 3, 0],
+    sequential_axon_order=[5, 6, 9, 8, 2, 4, 7, 1, 3, 0],  # order in which axons fire
 )
 
 

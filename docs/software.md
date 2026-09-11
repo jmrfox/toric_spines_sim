@@ -50,4 +50,4 @@ mascaf’s GitHub `main` branch still contains extra toric-spine research script
 
 ## Biophysics notes
 
-Temperature is Kelvin (in vitro ~280 K; barn owl in vivo ~313 K). Capacitance is µF/cm²; leak is S/cm²; axial resistivity is Ω·cm. Default banks in `make_default_parameter_bank()` annotate Sanculi-derived leak / Cm / τ_m; in-vivo leak is often taken as ~3× the in-vitro Sanculi value. Per-spine experiments override values in `simulations/ts{id}/params.py`.
+Temperature is Kelvin (in vitro ~297 K; barn owl in vivo ~313 K). Capacitance is µF/cm²; leak is S/cm²; axial resistivity is Ω·cm. ICx banks: `make_icx_parameter_bank_invitro()` (Sanculi patch clamp) and `make_icx_parameter_bank_invivo()` (Peña and Konishi 2002 rest; Sanculi leak × 3). Tutorials use `make_default_parameter_bank()`. Axon studies return the invivo bank from `simulations/ts{id}/params.py`; uncomment another factory or set `.value` for a per-spine change.

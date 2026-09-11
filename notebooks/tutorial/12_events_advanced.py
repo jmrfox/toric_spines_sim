@@ -14,16 +14,20 @@
 # ---
 
 # %% [markdown]
-# # 10 — Event generators (advanced)
+# # 12 — Event generators (advanced)
 #
-# Notebook 09 covered independent axons and `FlatRateCurve`. This notebook
-# covers other rate curves, shared-source routing, axon-map remapping, and
-# `random_axon_events`.
+# `events_basic` covered hand-built `TsGroup`s, timestamp files, and
+# independent `FlatRateCurve` generators. Here the extras are other
+# `RateCurve`s, shared-source routing, and axon-order remapping.
 #
 # When an axon fires, every synapse on that axon gets the same timestamp.
+# `TSSimulator` maps by **synpts order**, so axon-order streams need a remap
+# before `run()`. A `dict` keyed by place tags (`syn_0`, …) is the
+# label-based alternative (`tsmodel_and_tsrecipe`).
 
 # %%
 import numpy as np
+import pynapple as nap
 
 from toric_spines_sim.events import (
     DeterministicEventGenerator,
@@ -68,7 +72,7 @@ for t in times:
 # %% [markdown]
 # ## Shared source
 #
-# Pass **one** `RateCurve` instead of a list. Routing:
+# A single `RateCurve` can feed several axons. Routing:
 #
 # - `"broadcast"` — every master event hits every axon
 # - `"roundrobin"` — master events cycle across axons
@@ -134,13 +138,52 @@ plotter.add_streams(ramp_events)
 plotter.show()
 
 # %% [markdown]
+# ## External axon spike trains
+#
+# Times grouped by axon (not by synpts row) go into a `TsGroup` in **axon
+# order** (all synapses of axon 0, then axon 1, …); then
+# `remap_axon_channel_events_to_synapses` scatters them. Toy map: axon 0
+# hits synapses 2 then 0; axon 1 hits synapse 1.
+
+# %%
+toy_axon_synapses = [[2, 0], [1]]
+toy_n_synapses = 3
+axon_order = nap.TsGroup(
+    {
+        0: nap.Ts(t=[10.0, 40.0], time_units="ms"),  # axon 0 → syn 2
+        1: nap.Ts(t=[10.0, 40.0], time_units="ms"),  # axon 0 → syn 0
+        2: nap.Ts(t=[25.0], time_units="ms"),  # axon 1 → syn 1
+    },
+    time_support=nap.IntervalSet(start=[0], end=[T_MS], time_units="ms"),
+)
+print("axon-order indices:", list(axon_order.keys()))
+synpts_order = remap_axon_channel_events_to_synapses(
+    axon_order, toy_axon_synapses, n_synapses=toy_n_synapses
+)
+print("after remap, times at syn_0 / syn_1 / syn_2:")
+for idx, ts in synpts_order.items():
+    print(f"  syn_{idx}: {ts.as_units('ms').index.values.tolist()}")
+
+plotter = RasterPlotter(title="Axon-order channels (before remap)", xlim=(0.0, T_MS))
+plotter.add_streams(axon_order)
+plotter.show()
+plotter = RasterPlotter(title="Synpts order (after remap)", xlim=(0.0, T_MS))
+plotter.add_streams(synpts_order)
+plotter.show()
+
+# %% [markdown]
+# `TSRecipe` also accepts `dict[str, list[float]]` keyed by place tags
+# (`syn_0`, `syn_1`, …). That path maps by **label**, not TsGroup index.
+# See `tsmodel_and_tsrecipe`.
+
+# %% [markdown]
 # ## TS1 axon map → synapse order
 #
 # Load `ts1_axons.txt`, generate in **axon order**, then
 # `remap_axon_channel_events_to_synapses` so stream `i` matches synpts row
 # `i`. `TSSimulator` expects that synapse order.
 #
-# Notebook 13 uses a simpler independent-per-synapse pattern so the
+# `tssimulator` uses a simpler independent-per-synapse pattern so the
 # construction example stays short. The axon PDF study
 # (`python -m simulations.ts1.axons`) uses this remap path.
 

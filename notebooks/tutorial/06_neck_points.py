@@ -14,12 +14,13 @@
 # ---
 
 # %% [markdown]
-# # 05 — Neck points
+# # 06 — Neck points
 #
 # Isolated TS meshes are closed at each neck; the parent cell mesh is open
-# there (the spine continues into dendrite cytosol). Cap faces that disagree
-# with the cell surface mark the neck. Their area-weighted centroids are the
-# XYZ used for sink attachment.
+# there. Cap faces that disagree with the cell surface mark the neck. Their
+# area-weighted centroids are the XYZ used for sink attachment
+# (`sink_attachment`). `NeckpointParams` controls the search;
+# `compute_neck_points_for_spine` runs it.
 #
 # ```bash
 # uv run python scripts/compute_neckpoints.py TS1 --max-necks 1
@@ -52,11 +53,17 @@ RECOMPUTE = False  # re-detect neckpoints into tutorial_output_dir
 SHOW_ALL = False  # print neckpoints for every spine
 tutorial_output_dir = NOTEBOOKS_DIR / "tutorial" / "_artifacts"
 
+params = NeckpointParams(max_necks=1)
+print("NeckpointParams:", params)
+print("  max_necks:", params.max_necks)
+print("  crop_margin:", params.crop_margin)
+print("NeckCandidate fields:", NeckCandidate.__dataclass_fields__.keys())
+
 # %% [markdown]
 # ## Precomputed neckpoint files
 #
 # Pixel-space XYZ near the cut where the spine left the dendrite.
-# Micron copies are written later by the sink pipeline (notebook 06).
+# Micron copies are written later by the sink pipeline (`sink_attachment`).
 
 # %%
 neckpoint_path_pixels = get_pointset_path(f"{spine_id}_neckpoint.txt", units="pixels")
@@ -78,18 +85,12 @@ print("default_neckpoint_path:", default_neckpoint_path(spine_id))
 print("cell mesh:", get_cell_mesh_path())
 
 # %% [markdown]
-# ## Detection parameters
+# ## Optional recompute
 #
-# `NeckpointParams` holds crop margin, alignment / signed-distance thresholds,
-# and `max_necks` (keep the n largest caps). `NeckCandidate` is one detected
-# interface (centroid, area, planarity, and related scores).
+# `compute_neck_points_for_spine` takes a `NeckpointParams` instance.
+# `max_necks` keeps the n largest caps.
 
 # %%
-params = NeckpointParams(max_necks=1)
-print("max_necks:", params.max_necks)
-print("crop_margin:", params.crop_margin)
-print("NeckCandidate fields:", NeckCandidate.__dataclass_fields__.keys())
-
 if RECOMPUTE:
     tutorial_output_dir.mkdir(parents=True, exist_ok=True)
     output_path = tutorial_output_dir / f"{spine_id}_neckpoint.txt"

@@ -14,15 +14,17 @@
 # ---
 
 # %% [markdown]
-# # 13 — `TSSimulator`
+# # 15 — `TSSimulator`
 #
-# This notebook runs a cable-cell simulation with `TSSimulator`. You pass a
-# micron sink SWC and synpts from `data/`, a pynapple event group, and a
-# `ParameterSet`; `run()` returns `SimulationResults`. Synapses are always
-# AMPA from the points file. For other receptors, build `TSModel` yourself
-# (notebook 12).
+# To run a cable-cell simulation, pass a micron sink SWC, synpts, a
+# synpts-order pynapple `TsGroup`, and a sampled `ParameterSet` into
+# `TSSimulator`, then call `run()`. Synapses are always AMPA from the points
+# file. Existing spike times can go straight into a `TsGroup`
+# (`events_basic`); generators are optional. For receptors other than AMPA,
+# use `TSModel` (`synapses_advanced`, `tsmodel_and_tsrecipe`) rather than
+# `TSSimulator`.
 #
-# Needs the NMODL catalogue (notebook 11). Result analysis is notebook 14.
+# Needs the NMODL catalogue (`mechanisms`). Result analysis is `simulation_results`.
 #
 # Full axon PDF / Dash studies:
 #
@@ -32,23 +34,20 @@
 # ```
 
 # %%
-from toric_spines_sim.events import FlatRateCurve, StochasticEventGenerator
+import pynapple as nap
+
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file
-from toric_spines_sim.paths import PROJECT_ROOT, get_pointset_path, get_swc_path
+from toric_spines_sim.model import check_catalogue
+from toric_spines_sim.paths import get_pointset_path, get_swc_path
 from toric_spines_sim.simulation import TSSimulator, make_default_parameter_bank
 from toric_spines_sim.utils import load_xyz_points
 from toric_spines_sim.viz import RasterPlotter, TimeSeriesPlotter
 
-catalogue = PROJECT_ROOT / "toric_spines_sim" / "mechanisms" / "custom-catalogue.so"
-if not catalogue.is_file():
-    raise FileNotFoundError(
-        f"Missing {catalogue}. From the repo root run:\n"
-        "  uv run bash scripts/make_custom_catalogue.sh"
-    )
+check_catalogue()
 
 swc_path = get_swc_path("TS1_wsink_r10um.swc", units="microns")
 synpts_path = get_pointset_path("TS1_synpts.txt", units="microns")
-n_synapses = len(load_xyz_points(synpts_path))
+n_synapses = len(load_xyz_points(synpts_path))  # 25
 sink_xyz = sink_endpoint_location_from_swc_file(swc_path)
 print("SWC:   ", swc_path)
 print("synpts:", synpts_path, f"({n_synapses} sites)")
@@ -57,9 +56,11 @@ print("sink:  ", sink_xyz)
 # %% [markdown]
 # ## Parameter set and events
 #
-# Short trial, coarse discretization, sink-only recording. Two synapses at
-# 50 Hz; the other streams stay silent. Independent-per-synapse generators
-# match synpts order, so no axon remap is required (notebook 10).
+# Short trial, coarse discretization, sink-only recording. Hand-built
+# `TsGroup` in synpts order: two active synapses, the rest silent. Channel
+# `i` maps to `syn_i`. Dict events keyed by place tag are a `TSRecipe` path
+# (`tsmodel_and_tsrecipe`), not `TSSimulator`. Axon-order times need a remap
+# first (`events_advanced`).
 
 # %%
 parameter_bank = make_default_parameter_bank()
@@ -75,16 +76,19 @@ parameter_bank["hh_scale"].value = 0.0
 parameters = parameter_bank.sample()
 parameters["hh_tags"] = []
 
-rates_hz = [0.0] * n_synapses
-rates_hz[0] = rates_hz[1] = 50.0
-events = StochasticEventGenerator(
-    rate_curves=[FlatRateCurve(r) for r in rates_hz],
-    n_synapses_per_axon=[1] * n_synapses,
-    T_ms=parameters["T_ms"],
-    delay_ms=parameters["delay_ms"],
-    seed=int(parameters["seed"]),
-).generate()
-print(f"event streams: {len(events)}")
+t_ms = float(parameters["T_ms"])
+delay_ms = float(parameters["delay_ms"])
+events = nap.TsGroup(
+    {
+        i: nap.Ts(
+            t=([delay_ms, delay_ms + 20.0] if i in (0, 1) else []),
+            time_units="ms",
+        )
+        for i in range(n_synapses)
+    },
+    time_support=nap.IntervalSet(start=[0], end=[t_ms], time_units="ms"),
+)
+print(f"event streams: {len(events)} (indices 0 and 1 active)")
 
 sim = TSSimulator(
     swc_path,
@@ -93,6 +97,11 @@ sim = TSSimulator(
     parameters,
     record_points={"sink": sink_xyz},
 )
+print("TSSimulator:", type(sim).__name__)
+print("  swc_filepath:   ", sim.swc_filepath)
+print("  synpts_filepath:", sim.synpts_filepath)
+print("  n event streams:", len(events))
+print("  record_points:  ", sim.record_points_spec)
 
 # %% [markdown]
 # ## Build steps (computed on first use, then reused)

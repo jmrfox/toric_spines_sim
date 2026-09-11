@@ -14,24 +14,21 @@
 # ---
 
 # %% [markdown]
-# # 11 — Mechanisms (NMODL catalogue)
+# # 13 — Mechanisms (NMODL catalogue)
 #
-# `TSModel.build_cell()` loads
-# `toric_spines_sim/mechanisms/custom-catalogue.so`. That file is not tracked
-# by git and must be built on this machine:
+# `TSModel` and `TSSimulator` load the compiled NMODL catalogue
+# (`custom-catalogue.so`). To build it:
 #
 # ```bash
 # uv run bash scripts/make_custom_catalogue.sh
 # ```
 #
-# This notebook maps package synapse keys (`ampa`) to NMODL names (`ampasyn`).
-# It does not teach NMODL. Sources live in `mechanisms/my_catalogue/`;
-# `mechanisms/other/` is unused reference.
+# Package synapse keys (`ampa`) map to NMODL names (`ampasyn`) via
+# `MODEL_REGISTRY`. This notebook does not teach NMODL. Sources live in
+# `mechanisms/my_catalogue/`; `mechanisms/other/` is unused reference.
 
 # %%
-from pathlib import Path
-
-from toric_spines_sim.model.model import CUSTOM_CATALOGUE_PATH
+from toric_spines_sim.model import CUSTOM_CATALOGUE_PATH, check_catalogue
 from toric_spines_sim.model.synapse import MODEL_REGISTRY
 from toric_spines_sim.paths import PROJECT_ROOT
 
@@ -48,11 +45,21 @@ print("unused / reference:")
 for path in sorted(other_src.glob("*.mod")):
     print(f"  {path.name}")
 
-if not CUSTOM_CATALOGUE_PATH.is_file():
-    raise FileNotFoundError(
-        f"Missing {CUSTOM_CATALOGUE_PATH}. From the repo root run:\n"
-        "  uv run bash scripts/make_custom_catalogue.sh"
-    )
+# %% [markdown]
+# ## Load the catalogue
+#
+# Same call `TSModel` makes. After changing a `.mod` file, upgrading Arbor, or
+# switching OS/compiler: delete the `.so` and rebuild. Do not copy a catalogue
+# between machines.
+
+# %%
+catalogue = check_catalogue()
+print("loaded catalogue:", type(catalogue).__name__)
+try:
+    names = list(catalogue)
+except TypeError:
+    names = [p.stem for p in catalogue_src.glob("*.mod")]
+print("mechanisms:", names)
 
 # %% [markdown]
 # ## Registry → catalogue
@@ -67,7 +74,7 @@ for key, spec in MODEL_REGISTRY.items():
 
 # %% [markdown]
 # Density mechanism `hhnotemp` is **not** in the synapse registry. `TSModel`
-# applies it on `hh_tags` when `hh_scale != 0` (notebook 08 / 12).
+# applies it on `hh_tags` when `hh_scale != 0` (`parameters` and `tsmodel_and_tsrecipe`).
 
 # %%
 hh = (catalogue_src / "hhnotemp.mod").read_text().splitlines()[:12]
@@ -82,24 +89,5 @@ for line in ampa.splitlines():
         print(" ", line)
 
 # %% [markdown]
-# ## Load the catalogue
-#
-# Same call `TSModel` makes. After changing a `.mod` file, upgrading Arbor, or
-# switching OS/compiler: delete the `.so` and rebuild. Do not copy a catalogue
-# between machines.
-
-# %%
-import arbor as A
-
-catalogue = A.load_catalogue(str(CUSTOM_CATALOGUE_PATH))
-print("loaded catalogue:", type(catalogue).__name__)
-# Mechanism names present in this catalogue:
-try:
-    names = list(catalogue)
-except TypeError:
-    names = [p.stem for p in catalogue_src.glob("*.mod")]
-print("mechanisms:", names)
-
-# %% [markdown]
-# Notebooks 12–16 need this `.so`. Density vs point-process placement happens
-# in `TSModel.build_cell()`, not here.
+# `tsmodel_and_tsrecipe` through `kmatrix` need this `.so`. Density vs
+# point-process placement happens in `TSModel.build_cell()`, not here.

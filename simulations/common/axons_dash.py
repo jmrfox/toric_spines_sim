@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.simulation import TSSimulator
 from toric_spines_sim.viz import (
     create_simulation_dash_app,
@@ -30,6 +31,7 @@ def run_axons_dash(
     use_cache: bool = False,
 ) -> None:
     """Run one scenario on ``config`` and launch the Dash voltage dashboard."""
+    check_catalogue()
     logger.info("Scenario: %s", scenario.metadata)
 
     swc_filepath = config.swc_path()

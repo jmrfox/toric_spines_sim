@@ -14,13 +14,14 @@
 # ---
 
 # %% [markdown]
-# # 17 — Visualization
+# # 19 — Visualization
 #
-# This notebook uses the package Plotly / matplotlib / Dash helpers; it is not
-# a general plotting course. Morphology quality checks do not need Arbor.
-# Animation and the simulation dashboard need a `SimulationResults` from
-# notebook 13/14 (leave `RUN_PLAYBACK = False` unless you want to build
-# frames).
+# Package Plotly helpers for mesh / skeleton / SWC overlays are
+# `figure_mesh_and_skeleton`, `figure_mesh_and_swc`, and
+# `plot_morphology_frusta_3d`. This is not a general plotting course.
+# Morphology quality checks do not need Arbor. Animation and the simulation
+# dashboard need a `SimulationResults` from `tssimulator` /
+# `simulation_results` (`RUN_PLAYBACK = False` unless building frames).
 #
 # Production Dash: `uv run python -m simulations.ts1.axons_dash`.
 # Parameter-sweep browser: `create_hypergrid_dash_app(data_dir)` on a
@@ -57,17 +58,21 @@ neckpoint_path_pixels = get_pointset_path(f"{spine_id}_neckpoint.txt", units="pi
 # %% [markdown]
 # ## Mesh vs skeleton / SWC
 #
-# Same helpers as notebooks 02 and 04.
+# Same helpers as `pymcfs_basic` and `mascaf_basic`.
 
 # %%
 if polylines_path.is_file():
-    figure_mesh_and_skeleton(mesh_path, polylines_path).show()
+    fig_skel = figure_mesh_and_skeleton(mesh_path, polylines_path)
+    print("figure_mesh_and_skeleton →", type(fig_skel).__name__)
+    fig_skel.show()
 else:
     print("skip skeleton overlay: missing", polylines_path)
 
 neck_points = load_xyz_points(neckpoint_path_pixels) if neckpoint_path_pixels.is_file() else None
 if swc_path_pixels.is_file():
-    figure_mesh_and_swc(mesh_path, swc_path_pixels, neck_points=neck_points).show()
+    fig_swc = figure_mesh_and_swc(mesh_path, swc_path_pixels, neck_points=neck_points)
+    print("figure_mesh_and_swc →", type(fig_swc).__name__)
+    fig_swc.show()
 else:
     print("skip SWC overlay: missing", swc_path_pixels)
 
@@ -79,8 +84,10 @@ else:
 
 # %%
 model = SWCModel.from_swc_file(str(swc_path_microns), validate_reconnections=False)
+print("SWCModel:", type(model).__name__, "n nodes:", model.number_of_nodes())
 syn_pointset = PointSet.from_txt_file(synpts_path)
-plot_model(
+print("PointSet:", type(syn_pointset).__name__)
+fig_swctools = plot_model(
     swc_model=model,
     point_set=syn_pointset,
     point_size=0.15,
@@ -92,18 +99,23 @@ plot_model(
     show_centroid=False,
     width=900,
     height=700,
-).show()
+)
+print("plot_model →", type(fig_swctools).__name__)
+fig_swctools.show()
 
 morph = A.load_swc_arbor(str(swc_path_microns))
+print("Arbor morphology:", type(morph).__name__)
 synpts = load_xyz_points(synpts_path)
-plot_morphology_frusta_3d(
+fig_frusta = plot_morphology_frusta_3d(
     morph,
     backend="plotly",
     overlays={"syn": synpts},
     n_sides=10,
     alpha=0.8,
     config=VizConfig(width=900, height=700),
-).show()
+)
+print("plot_morphology_frusta_3d →", type(fig_frusta).__name__)
+fig_frusta.show()
 
 # %% [markdown]
 # ## Animation and Dash (optional)
@@ -130,6 +142,6 @@ plot_morphology_frusta_3d(
 
 # %%
 if RUN_PLAYBACK:
-    print("Set RUN_PLAYBACK after you have SimulationResults from notebook 13.")
+    print("Set RUN_PLAYBACK after you have SimulationResults from `tssimulator`.")
 else:
     print("RUN_PLAYBACK is False; morphology figures above are the live demo.")

@@ -22,6 +22,7 @@ cd toric_spines_sim
 uv sync
 uv run bash scripts/make_custom_catalogue.sh
 uv run python -c "import arbor as A; A.print_config()"
+uv run python -c "from toric_spines_sim.model import check_catalogue; check_catalogue()"
 ```
 
 ## macOS
@@ -56,7 +57,7 @@ Arbor does not ship native Windows wheels. Use **[WSL2](https://learn.microsoft.
 
 ## First run
 
-Work through `notebooks/tutorial/` in order (`01_meshes` … `19_spiny_dendrite`). Pair `.py` sources with notebooks via jupytext (`uv run jupytext --sync notebooks/tutorial/*.py`). Notebooks 11–16 need the NMODL catalogue. Extra demos (including a raw Arbor primer) live under `notebooks/misc/`. All-spine morphology galleries use `SHOW_ALL = True` in the morphology notebooks.
+Work through `notebooks/tutorial/` in order (`01_meshes` … `21_spiny_dendrite`). Pair `.py` sources with notebooks via jupytext (`uv run jupytext --sync notebooks/tutorial/*.py`). The NMODL catalogue is needed from `mechanisms` through `kmatrix`, except `pdf_reports`. Extra demos (including a raw Arbor primer) live under `notebooks/misc/`. All-spine morphology galleries use `SHOW_ALL = True` in the morphology notebooks.
 
 Full axon PDF study: `uv run python -m simulations.ts1.axons` (or `ts2`, `ts3`, …). See [Simulations](simulations.md). Tests: `uv run pytest`.
 

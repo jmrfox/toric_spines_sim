@@ -14,23 +14,24 @@
 # ---
 
 # %% [markdown]
-# # 06 — Sink attachment
+# # 07 — Sink attachment
 #
-# An isolated spine must leak into a substitute for the rest of the cell
-# (dendrite and soma). Attach a cylinder at the neckpoint and scale pixels
-# to microns.
+# We model the downstream cell volume with a sink structure.
+# To attach a straight cylinder, pass a `SinkGeometry` into
+# `append_sink_write`. Simulations load the **micron** SWC. Synapse
+# placement is `synapses_basic`.
 #
 # ```bash
 # uv run python scripts/append_sink.py TS1
 # ```
 #
-# Tags used throughout: spine=3, sink cylinder=5, sink tip=6. Simulations
-# load the **micron** file. By default this notebook loads and displays
-# `TS1_wsink_r10um.swc`. `RECOMPUTE = True` writes under
+# Tags used throughout: spine=3, sink cylinder=5, sink tip=6. By default this
+# notebook loads `TS1_wsink_r10um.swc`. `RECOMPUTE = True` writes under
 # `notebooks/tutorial/_artifacts/` only.
 #
 # Radius scaling at simulation time (`sink_radii_scale`, `neck_radius_scale`
-# on the parameter set) is applied by `TSModel.build_cell()` — see notebook 12.
+# on the parameter set) is applied by `TSModel.build_cell()` — see
+# `tsmodel_and_tsrecipe`.
 
 # %%
 from collections import Counter
@@ -63,9 +64,11 @@ tutorial_output_dir = NOTEBOOKS_DIR / "tutorial" / "_artifacts"
 # %% [markdown]
 # ## `SinkGeometry`
 #
-# Straight cylinder: radius, length, number of frusta, connector stub, axis
-# (`'x'`/`'-z'` or a 3-vector). `append_sink_write` picks a direction with
-# `optimal_sink_direction` unless you pass a geometry yourself.
+# `SinkGeometry` is the object passed into `append_sink_write` /
+# `append_sink_to_swc`. Straight cylinder: radius, length, number of frusta,
+# connector stub, axis (`'x'`/`'-z'` or a 3-vector). Without an explicit
+# geometry, `append_sink_write` picks a direction with
+# `optimal_sink_direction`.
 
 # %%
 print("DEFAULT_SINK_RADIUS_UM:", DEFAULT_SINK_RADIUS_UM)

@@ -17,6 +17,7 @@ git clone https://github.com/jmrfox/toric_spines_sim.git
 cd toric_spines_sim
 uv sync
 uv run bash scripts/make_custom_catalogue.sh
+uv run python -c "from toric_spines_sim.model import check_catalogue; check_catalogue()"
 ```
 
 `uv sync` installs Arbor and the GitHub packages `swctools`, `jscip`, `pymcfs`, and `mascaf`. The TS1 neurosignature pipeline is optional: `uv sync --group neurosignature`.

@@ -29,7 +29,7 @@ Precomputed morphologies already in `data/` are `data/swc/microns/TS{id}_wsink_r
 | [common/inputs.py](common/inputs.py) | `InputScenario` builders (pulse / periodic / Poisson) |
 | [common/axons_report.py](common/axons_report.py) | Pairwise / sequential / synchrony PDF study |
 | [common/axons_dash.py](common/axons_dash.py), [common/axons_animation.py](common/axons_animation.py) | Dash and HTML animation helpers |
-| `simulations/ts{id}/params.py` | Parameter bank: starts from `make_default_parameter_bank()`; uncomment `.value` lines to override |
+| `simulations/ts{id}/params.py` | Returns `make_icx_parameter_bank_invivo()`; uncomment another factory or set `.value` to tweak |
 | `simulations/ts{id}/inputs.py` | Axon map path, scenario options (`ACTIVE_AXONS`, rates, sequential order) |
 | `simulations/ts{id}/axons.py` | Thin `run_axons_study(MODEL)` entry point |
 

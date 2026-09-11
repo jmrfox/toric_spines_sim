@@ -17,8 +17,8 @@
 # # Raw Arbor cable cell (optional)
 #
 # Arbor internals: segment tree, labels, decor, recipe. This is **not**
-# the package pipeline. For toric-spine simulations use tutorial notebook 13
-# (`TSSimulator`). This file lives in `notebooks/misc/` as a primer.
+# the package pipeline. For toric-spine simulations use the `tssimulator`
+# tutorial. This file lives in `notebooks/misc/` as a primer.
 
 # %%
 import arbor as A

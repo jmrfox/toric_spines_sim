@@ -27,11 +27,12 @@ from . import kmatrix  # noqa: F401
 # Core classes
 from .model.synapse import SynapsePoint, SynapsePopulation  # noqa: F401
 from .model.gj import GapJunctionPoint  # noqa: F401
-from .model import TSModel, TSRecipe  # noqa: F401
+from .model import TSModel, TSRecipe, check_catalogue  # noqa: F401
 from .simulation import (
     SimulationResults,
     make_default_parameter_bank,
-    make_icx_parameter_bank,
+    make_icx_parameter_bank_invitro,
+    make_icx_parameter_bank_invivo,
     TSSimulator,
 )  # noqa: F401
 
@@ -83,9 +84,11 @@ __all__ = [
     "GapJunctionPoint",
     "TSModel",
     "TSRecipe",
+    "check_catalogue",
     "SimulationResults",
     "make_default_parameter_bank",
-    "make_icx_parameter_bank",
+    "make_icx_parameter_bank_invitro",
+    "make_icx_parameter_bank_invivo",
     "TSSimulator",
     # Preparation functions
     "prepare_gap_junctions",

@@ -14,10 +14,15 @@
 # ---
 
 # %% [markdown]
-# # 02 — Skeletonization (pymcfs, basic)
+# # 02 — pymcfs (basic)
 #
-# This notebook skeletonizes a closed triangle mesh with mean-curvature flow
-# via `pymcfs`. The matching command-line script is:
+# To skeletonize a closed triangle mesh, use `skeletonize_mesh`, the package
+# wrapper around [pymcfs](https://github.com/jmrfox/pymcfs). Mean-curvature
+# flow contracts the mesh to a 1D skeleton; this project writes polylines.
+# Package defaults are enough for TS meshes; kwargs are in `pymcfs_advanced`.
+# Cable fitting is `mascaf_basic`.
+#
+# The matching command-line script is:
 #
 # ```bash
 # uv run python scripts/skeletonize_meshes.py TS1.obj
@@ -26,16 +31,14 @@
 #
 # Package defaults match the toric-spine batch: `profile="auto"`,
 # `branching="sparse"`, tip extension on. `profile="auto"` automatically
-# chooses contraction settings. Those options are not the same as CGALLab
-# QST/MCST parameters.
+# chooses contraction settings.
 #
 # Set `RECOMPUTE = True` to run pymcfs and write under
 # `notebooks/tutorial/_artifacts/`. Leave it `False` to load the precomputed
-# skeleton in `data/skeletons/`. Advanced options and `mesh_to_swc` are
-# notebook 03.
+# skeleton in `data/skeletons/`.
 #
 # IMOD reconstruction and CGALLab: `docs/reconstruction.md`,
-# `docs/skeletons.md`.
+# `docs/skeletons.md`. Algorithm internals live in the pymcfs docs.
 
 # %%
 from toric_spines_sim.geometry import (
@@ -61,8 +64,8 @@ print("mesh:", mesh_path)
 # ## Package defaults
 #
 # `skeletonize_mesh` copies `TORIC_SPINES_SKELETONIZE_DEFAULTS`, then applies
-# `profile` / `branching` and any extra keyword arguments. Algorithm details
-# live in pymcfs; this notebook only shows the wrapper used for toric spines.
+# `profile` / `branching` and any extra keyword arguments. This notebook uses
+# those defaults as-is. `pymcfs_advanced` lists every key and how overrides merge.
 
 # %%
 print("pymcfs defaults:")
@@ -117,3 +120,5 @@ if SHOW_ALL:
         figure_mesh_and_skeleton(other_mesh, other_polylines).show()
 else:
     print("SHOW_ALL is False; skip gallery. Set True to plot every spine.")
+
+# %%

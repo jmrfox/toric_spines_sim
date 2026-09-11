@@ -14,7 +14,14 @@ uv run python -m simulations.ts2.ts2_integration
 uv run python -m simulations.ts2.ts2_integration --verbose
 ```
 
-Build the NMODL catalogue first if `toric_spines_sim/mechanisms/custom-catalogue.so` is missing (see [Getting started](getting-started.md)):
+Build the NMODL catalogue first if `toric_spines_sim/mechanisms/custom-catalogue.so` is missing or stale (see [Getting started](getting-started.md)). Confirm with `check_catalogue()`:
+
+```python
+from toric_spines_sim.model import check_catalogue
+check_catalogue()
+```
+
+If that raises, rebuild from the repository root:
 
 ```bash
 uv run bash scripts/make_custom_catalogue.sh
@@ -27,7 +34,7 @@ simulations/
   README.md
   common/                 shared axon PDF / Dash / animation helpers
   ts1/                    (same pattern for ts2, ts3, ts4, ts48, ts67, ts76)
-    params.py             parameter bank (uncomment .value lines to override)
+    params.py             returns make_icx_parameter_bank_invivo(); switch factory or set .value to tweak
     inputs.py             SWC / synpts / axon map + scenario options
     axons.py              PDF study
     axons_dash.py         3D Dash dashboard
@@ -39,7 +46,7 @@ simulations/
     ts2_integration_viz.py
 ```
 
-Tweak biophysics in `params.py` (starts from `make_default_parameter_bank()`). Tweak which axons fire, rates, and pulse timing in `inputs.py`. Leave `common/` alone unless a change should apply to every spine.
+Tweak biophysics in `params.py`. Each spine returns `make_icx_parameter_bank_invivo()`; uncomment `make_default_parameter_bank()` or `make_icx_parameter_bank_invitro()`, or set `.value` on sampled keys, for a per-spine change. Tutorials use `make_default_parameter_bank()`. Tweak which axons fire, rates, and pulse timing in `inputs.py`. Leave `common/` alone unless a change should apply to every spine.
 
 ## Shared vs per-model
 
@@ -49,7 +56,7 @@ Tweak biophysics in `params.py` (starts from `make_default_parameter_bank()`). T
 | `simulations/common/inputs.py` | `InputScenario` builders (pulse / periodic / Poisson) |
 | `simulations/common/axons_report.py` | Pairwise / sequential / synchrony PDF study |
 | `simulations/common/axons_dash.py`, `axons_animation.py` | Dash and HTML animation helpers |
-| `simulations/ts{id}/params.py` | Parameter bank: starts from `make_default_parameter_bank()`; uncomment `.value` lines to override |
+| `simulations/ts{id}/params.py` | Returns `make_icx_parameter_bank_invivo()`; uncomment another factory or set `.value` to tweak |
 | `simulations/ts{id}/inputs.py` | Axon map path, scenario options (`ACTIVE_AXONS`, rates, sequential order) |
 | `simulations/ts{id}/axons.py` | Thin `run_axons_study(MODEL)` entry point |
 

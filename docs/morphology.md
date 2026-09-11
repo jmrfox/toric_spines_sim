@@ -13,7 +13,7 @@ sudo apt install libsuitesparse-dev
 brew install suite-sparse
 ```
 
-You can process one spine (`TS1.obj`) or every `TS*.obj` (`--all`). A worked example on TS1 is `notebooks/tutorial/` (`01_meshes`–`07_synapses`). Set `SHOW_ALL = True` in those notebooks to review every spine.
+You can process one spine (`TS1.obj`) or every `TS*.obj` (`--all`). A worked example on TS1 is `notebooks/tutorial/` (`01_meshes`–`07_sink_attachment`). Set `SHOW_ALL = True` in those notebooks to review every spine.
 
 ## 1. Organize meshes
 
@@ -28,7 +28,7 @@ uv run python scripts/skeletonize_meshes.py TS1.obj
 uv run python scripts/skeletonize_meshes.py --all
 ```
 
-Review mesh vs skeleton in `notebooks/tutorial/02_skeletonization_basic` (`SHOW_ALL = True`).
+Review mesh vs skeleton in `notebooks/tutorial/02_pymcfs_basic` (`SHOW_ALL = True`).
 
 ## 3. Fit SWC cables
 
@@ -43,7 +43,7 @@ uv run python scripts/fit_swc.py TS1.obj
 uv run python scripts/fit_swc.py --all --basis-optimize --verbose
 ```
 
-Review mesh vs SWC in `notebooks/tutorial/04_swc_cable_fit` (`SHOW_ALL = True`).
+Review mesh vs SWC in `notebooks/tutorial/04_mascaf_basic` (`SHOW_ALL = True`).
 
 ## 4. Neckpoints (recommended before the sink)
 
@@ -71,7 +71,7 @@ uv run python scripts/append_sink.py --all
 uv run python scripts/append_sink.py TS1 --radius-um 20
 ```
 
-Review in `notebooks/tutorial/05_neck_points`, `06_sink_attachment`, and `07_synapses` (`SHOW_ALL = True` on the sink gallery). SWC tags used throughout: spine=3, sink=5, sink tip=6.
+Review in `notebooks/tutorial/06_neck_points`, `07_sink_attachment`, and `09_synapses_basic` (`SHOW_ALL = True` on the sink gallery). SWC tags used throughout: spine=3, sink=5, sink tip=6.
 
 ## 6. Synapse coordinates (for simulation)
 

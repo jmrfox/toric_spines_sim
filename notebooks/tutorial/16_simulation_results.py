@@ -14,14 +14,14 @@
 # ---
 
 # %% [markdown]
-# # 14 — `SimulationResults`
+# # 16 — `SimulationResults`
 #
-# This notebook loads and displays the `SimulationResults` object returned by
-# `TSSimulator.run()`. It holds voltage traces as a pynapple `TsdFrame`, the
-# input events, synapse and morphology objects, helpers to save or load the
-# run (dill), and `integrate_voltages_by_tag`. It needs the NMODL catalogue
-# (notebook 11). The short run uses the same TS1 micron files from `data/` as
-# notebook 13.
+# `TSSimulator.run()` returns a `SimulationResults` object: voltage traces
+# as a pynapple `TsdFrame`, input events, synapse and morphology objects,
+# plus helpers to save or load the run (dill) and
+# `integrate_voltages_by_tag`. The NMODL catalogue (`mechanisms`) is
+# required. The short run uses the same TS1 micron files from `data/` as
+# `tssimulator`.
 #
 # `integrate_voltages_by_tag` only sees probes that were recorded. A sink-only
 # run can average tag 5/6; averaging the spine (tag 3) needs `"all"` probes
@@ -30,9 +30,9 @@
 # %%
 from toric_spines_sim.events import FlatRateCurve, StochasticEventGenerator
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file
+from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.paths import (
     NOTEBOOKS_DIR,
-    PROJECT_ROOT,
     get_pointset_path,
     get_swc_path,
 )
@@ -44,12 +44,7 @@ from toric_spines_sim.simulation import (
 from toric_spines_sim.utils import load_xyz_points
 from toric_spines_sim.viz import TimeSeriesPlotter
 
-catalogue = PROJECT_ROOT / "toric_spines_sim" / "mechanisms" / "custom-catalogue.so"
-if not catalogue.is_file():
-    raise FileNotFoundError(
-        f"Missing {catalogue}. From the repo root run:\n"
-        "  uv run bash scripts/make_custom_catalogue.sh"
-    )
+check_catalogue()
 
 tutorial_output_dir = NOTEBOOKS_DIR / "tutorial" / "_artifacts"
 swc_path = get_swc_path("TS1_wsink_r10um.swc", units="microns")
@@ -83,13 +78,19 @@ results = TSSimulator(
     events,
     parameters,
     record_points={"sink": sink_xyz},
+    # record_points="all",
 ).run()
 
-print("columns:", list(results.voltage_traces.columns))
-print("n synapses:", len(results.synapses))
-print("n gap junctions:", len(results.gap_junctions))
-print("record_points:", results.record_points)
-print("tags present on segment tree:", results.get_tags())
+print("SimulationResults:", type(results).__name__)
+print("  voltage_traces:", type(results.voltage_traces).__name__, results.voltage_traces.shape)
+print("  columns:", list(results.voltage_traces.columns))
+print("  n input streams:", len(results.input_events))
+print("  n synapses:", len(results.synapses))
+print("  n gap junctions:", len(results.gap_junctions))
+print("  record_points:", results.record_points)
+print("  swc_filepath:", results.swc_filepath)
+print("  synpts_filepath:", results.synpts_filepath)
+print("  tags present on segment tree:", results.get_tags())
 
 # %% [markdown]
 # ## Integrate by SWC tag
@@ -99,6 +100,7 @@ print("tags present on segment tree:", results.get_tags())
 # %%
 tags = results.get_tags()
 print("tags:", tags)
+# print(results.voltage_traces.columns)
 try:
     v_sink = results.integrate_voltages_by_tag([5, 6], method="average")
     plotter = TimeSeriesPlotter(

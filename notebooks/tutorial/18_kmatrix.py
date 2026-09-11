@@ -14,18 +14,18 @@
 # ---
 
 # %% [markdown]
-# # 16 — Pairwise integration (k-matrix)
+# # 18 — Pairwise integration (k-matrix)
 #
-# For two synapses $i$ and $j$, run three simulations (i only, j only, both)
-# and fit
+# Pairwise integration lives in `toric_spines_sim.kmatrix`
+# (`simulation`, `compute_pairwise_voltages`, `solve_k_linreg`). For two
+# synapses $i$ and $j$, three simulations (i only, j only, both) give
 #
 # $$ V_{ij} - V_i - V_j = k \, V_i V_j $$
 #
 # on baseline-subtracted **sink** voltage. $k < 0$ means sublinear summation.
-# Package helpers: `toric_spines_sim.kmatrix`.
 #
-# Needs the NMODL catalogue (notebook 11). Keep `T_ms` and `seeds` small here;
-# full rate-grid sweeps belong in `simulations/ts{id}/`.
+# Needs the NMODL catalogue (`mechanisms`). `T_ms` and `seeds` stay small
+# here; full rate-grid sweeps belong in `simulations/ts{id}/`.
 
 # %%
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file
@@ -35,8 +35,8 @@ from toric_spines_sim.kmatrix import (
     simulation,
     solve_k_linreg,
 )
+from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.paths import (
-    PROJECT_ROOT,
     get_pointset_path,
     get_swc_path,
 )
@@ -45,12 +45,7 @@ from toric_spines_sim.utils import load_xyz_points
 from toric_spines_sim.viz import RasterPlotter, TimeSeriesPlotter, VizConfig
 from toric_spines_sim.viz import plot_morphology_frusta_3d
 
-catalogue = PROJECT_ROOT / "toric_spines_sim" / "mechanisms" / "custom-catalogue.so"
-if not catalogue.is_file():
-    raise FileNotFoundError(
-        f"Missing {catalogue}. From the repo root run:\n"
-        "  uv run bash scripts/make_custom_catalogue.sh"
-    )
+check_catalogue()
 
 # Full outer-product k-matrix (many simulations). Leave False for a short demo.
 RUN_K_GRID = False
@@ -81,8 +76,8 @@ def load_morphology(swc_name: str, synpts_name: str):
 # %% [markdown]
 # ## TS1 — one pair, one rate
 #
-# Synapses 0 and 1 at 50 Hz. First a single combined run (same idea as 13),
-# then the three-way pairwise voltages and a linear fit for $k$.
+# Synapses 0 and 1 at 50 Hz. First a single combined run (same idea as
+# `tssimulator`), then the three-way pairwise voltages and a linear fit for $k$.
 
 # %%
 swc_path, synpts_path, n_syn, sink_xyz = load_morphology(
@@ -106,6 +101,14 @@ single = simulation(
     event_type="poisson",
     probe_label="sink",
 )
+
+print("simulation() →", type(single).__name__)
+print("  voltage_traces columns:", list(single.voltage_traces.columns))
+print("  n event streams:", len(single.input_events))
+
+print("simulation() →", type(single).__name__)
+print("  voltage_traces columns:", list(single.voltage_traces.columns))
+print("  n event streams:", len(single.input_events))
 
 plotter = TimeSeriesPlotter(
     title="TS1 sink voltage (syn 0+1 at 50 Hz)",
@@ -146,8 +149,10 @@ pair = compute_pairwise_voltages(
     SEEDS,
     probe_label="sink",
 )
+print("compute_pairwise_voltages keys:", sorted(pair))
 fit = solve_k_linreg(pair["v_1"], pair["v_2"], pair["v_12"])
 k = float(fit["coeffs"][0])
+print("solve_k_linreg keys:", sorted(fit))
 print(f"intersynapse distance: {pair['intersynapse_distance']:.3f} µm")
 print(f"k (slope) = {k:.4g}  ± {fit['uncertainty'][0]:.4g}")
 

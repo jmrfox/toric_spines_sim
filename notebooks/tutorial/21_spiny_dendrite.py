@@ -14,11 +14,12 @@
 # ---
 
 # %% [markdown]
-# # 19 — Synthetic spiny dendrite
+# # 21 — Synthetic spiny dendrite
 #
-# This notebook builds a comparison morphology: a tapered trunk with classical
-# neck+head spines. It writes the same subsystem files as a toric spine
-# (`SWC` + AZ + neckpoint), then appends a sink as in notebook 06.
+# A comparison morphology — tapered trunk with classical neck+head spines —
+# is `SpinyDendriteParams` plus `build_spiny_dendrite`. It writes the same
+# subsystem files as a toric spine (`SWC` + AZ + neckpoint). A sink attaches
+# with `SinkGeometry` as in `sink_attachment`.
 #
 # Writes under `_artifacts/` only. An earlier, less structured demo remains at
 # `notebooks/misc/spiny_dendrite_demo.py`.
@@ -64,7 +65,10 @@ params = SpinyDendriteParams(
     azimuth0=0.0,
     axis="z",
 )
+print("SpinyDendriteParams:", type(params).__name__)
+print("  length =", params.length, "n_spines =", params.n_spines)
 morph = build_spiny_dendrite(params)
+print("build_spiny_dendrite →", type(morph).__name__)
 print(f"trunk nodes: {len(morph.trunk_node_ids)}")
 print(f"spines / AZ: {morph.n_spines}")
 print(f"spines per attach node: {morph.spines_per_attach_node}")
@@ -109,6 +113,7 @@ geom = SinkGeometry(
     n_cylinders=4,
     axis="-z",
 )
+print("SinkGeometry:", geom)
 append_sink_to_swc(
     swc_in=swc_path,
     swc_out=swc_with_sink,

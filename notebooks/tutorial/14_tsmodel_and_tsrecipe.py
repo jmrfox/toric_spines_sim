@@ -14,35 +14,32 @@
 # ---
 
 # %% [markdown]
-# # 12 — `TSModel` and `TSRecipe`
+# # 14 — `TSModel` and `TSRecipe`
 #
-# This notebook builds an Arbor cable cell from the TS1 micron sink SWC and
-# synpts in `data/`, without running a simulation. It needs the NMODL
-# catalogue (notebook 11):
+# To build a cable cell from the TS1 micron sink SWC and synpts, use
+# `TSModel`. To attach events and probes, wrap that cell in a `TSRecipe`.
+# `run()` is `tssimulator`. The NMODL catalogue (`mechanisms`) is required:
 #
 # ```bash
 # uv run bash scripts/make_custom_catalogue.sh
 # ```
 #
-# `TSSimulator` (notebook 13) uses this same construction path. Use `TSModel`
-# directly when you need mixed synapse types or a custom probe set.
+# For mixed synapse types (`synapses_advanced`) or a custom probe set,
+# `TSModel` is the direct path. `TSSimulator` uses this same construction
+# internally.
 
 # %%
-from toric_spines_sim.events import FlatRateCurve, StochasticEventGenerator
+import pynapple as nap
+
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file
-from toric_spines_sim.model import TSModel, TSRecipe
+from toric_spines_sim.model import TSModel, TSRecipe, check_catalogue
 from toric_spines_sim.model.gj import prepare_gap_junctions
 from toric_spines_sim.model.synapse import SynapsePopulation
-from toric_spines_sim.paths import PROJECT_ROOT, get_pointset_path, get_swc_path
+from toric_spines_sim.paths import get_pointset_path, get_swc_path
 from toric_spines_sim.simulation import make_default_parameter_bank
 from toric_spines_sim.utils import load_xyz_points
 
-catalogue = PROJECT_ROOT / "toric_spines_sim" / "mechanisms" / "custom-catalogue.so"
-if not catalogue.is_file():
-    raise FileNotFoundError(
-        f"Missing {catalogue}. From the repo root run:\n"
-        "  uv run bash scripts/make_custom_catalogue.sh"
-    )
+check_catalogue()
 
 swc_path = get_swc_path("TS1_wsink_r10um.swc", units="microns")
 synpts_path = get_pointset_path("TS1_synpts.txt", units="microns")
@@ -59,6 +56,7 @@ parameters["hh_tags"] = []
 
 print("SWC:", swc_path)
 print("sink XYZ:", sink_xyz)
+print("n synapses:", n_synapses)
 
 # %% [markdown]
 # ## Synapses and gap junctions
@@ -91,6 +89,9 @@ model = TSModel(
     record_points=record_points,
     parameters=parameters,
 )
+print("TSModel:", type(model).__name__)
+print("  swc_path:", model.swc_path)
+print("  n synapses:", len(model.synapses))
 build_result = model.build_cell()
 print("build_cell keys:", sorted(build_result))
 print("cell:", type(build_result["cell"]).__name__)
@@ -100,31 +101,53 @@ print("labels:", type(build_result["labels"]).__name__)
 # %% [markdown]
 # ## `TSRecipe`
 #
-# Subclass of `arbor.recipe`. A pynapple `TsGroup` is mapped by **index** to
-# `list(synapses.keys())` order (`syn_0`, `syn_1`, …), not by channel label.
-# A dict maps synapse labels to time lists directly.
+# Subclass of `arbor.recipe`. Two ways to pass times (ms):
 #
-# Stop here — `run()` is notebook 13.
+# - **`TsGroup`:** index `i` → `list(synapses.keys())[i]` (`syn_0`, …). Labels
+#   ignored. Build this from lists or a file (`events_basic`).
+# - **`dict[str, list[float]]`:** keys must match place tags.
+#
+# Stop here — `run()` is `tssimulator`.
 
 # %%
-rates_hz = [0.0] * n_synapses
-rates_hz[0] = rates_hz[1] = 50.0
-events = StochasticEventGenerator(
-    rate_curves=[FlatRateCurve(r) for r in rates_hz],
-    n_synapses_per_axon=[1] * n_synapses,
-    T_ms=parameters["T_ms"],
-    delay_ms=parameters["delay_ms"],
-    seed=int(parameters["seed"]),
-).generate()
+t_ms = float(parameters["T_ms"])
+delay_ms = float(parameters["delay_ms"])
+tsgroup_events = nap.TsGroup(
+    {
+        i: nap.Ts(
+            t=([delay_ms, delay_ms + 20.0] if i in (0, 1) else []),
+            time_units="ms",
+        )
+        for i in range(n_synapses)
+    },
+    time_support=nap.IntervalSet(start=[0], end=[t_ms], time_units="ms"),
+)
+print("TsGroup streams:", len(tsgroup_events), "(indices 0 and 1 active)")
 
-recipe = TSRecipe(
+dict_events = {
+    label: ([delay_ms, delay_ms + 20.0] if label in ("syn_0", "syn_1") else [])
+    for label in synapses
+}
+print("dict keys sample:", list(dict_events)[:4], "...")
+
+recipe_from_tsgroup = TSRecipe(
     build_result["cell"],
     synapses=synapses,
     gap_junctions=gap_junctions,
     record_points=record_points,
-    events=events,
+    events=tsgroup_events,
     parameters=parameters,
     custom_catalogue=build_result["custom_catalogue"],
 )
-print("recipe:", type(recipe).__name__)
-print("num_cells:", recipe.num_cells())
+recipe_from_dict = TSRecipe(
+    build_result["cell"],
+    synapses=synapses,
+    gap_junctions=gap_junctions,
+    record_points=record_points,
+    events=dict_events,
+    parameters=parameters,
+    custom_catalogue=build_result["custom_catalogue"],
+)
+print("recipe from TsGroup:", type(recipe_from_tsgroup).__name__)
+print("recipe from dict:   ", type(recipe_from_dict).__name__)
+print("num_cells:", recipe_from_tsgroup.num_cells())

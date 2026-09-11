@@ -16,21 +16,31 @@
 # %% [markdown]
 # # 08 — Parameters
 #
-# ## `jscip`
+# Parameter management uses [jscip](https://github.com/jmrfox/jscip). 
+# I created this package to simplify parameter management in my own work on 
+# simulation-based inference and system variability quantification,
+# and thus random sampling of parameter values takes a central role. 
 #
-# Parameter management is [jscip](https://github.com/jmrfox/jscip). The package
-# prioritizes random sampling. Even without sampling, a `ParameterBank` is the
-# usual interface: set attributes, then call `bank.sample()` to get a
-# `ParameterSet` for `TSModel` / `TSSimulator`.
+# However, even without sampling, the package is very useful for managing large parameter sets.
+# It supports constraints, derived parameters, and vectors.
 #
-# This project ships `make_default_parameter_bank()`. Per-spine experiments
-# override a few `.value` lines in `simulations/ts{id}/params.py` and leave
-# the rest. You can also build your own bank from scratch.
+# The basic idea is that you construct a `ParameterBank` object, then use the
+# `ParameterBank.sample()` method to create a `ParameterSet` instance, which is
+# fed into the simulation and can be referenced using parameter names like a typical dict.
+#
+# In this repo, I have created a default parameter bank in
+# `toric_spines_sim.simulation.make_default_parameter_bank()`.
+# You can either use this, or copy that code to make your own bank.
+#
+# Per-spine axon studies return `make_icx_parameter_bank_invivo()` from
+# `simulations/ts{id}/params.py`. Uncomment another factory or set `.value`
+# there if you want a per-spine change. This notebook uses the default bank. 
+#
+# `TSModel` / `TSSimulator` take a `ParameterSet`. 
 #
 # Units:
-#
 # - time: ms
-# - temperature: Kelvin (in vitro ~280 K; barn owl in vivo ~313 K)
+# - temperature: Kelvin (in vitro ~297 K; barn owl in vivo ~313 K)
 # - membrane capacitance `cm_uF_per_cm2`: µF/cm²
 # - leak `pas_leak_g_S_per_cm2`: S/cm²
 # - axial resistivity `rL_ohm_cm`: Ω·cm
@@ -52,15 +62,32 @@ import matplotlib.pyplot as plt
 from toric_spines_sim.paths import get_data_path
 from toric_spines_sim.simulation import (
     make_default_parameter_bank,
-    make_icx_parameter_bank,
+    make_icx_parameter_bank_invitro,
+    make_icx_parameter_bank_invivo,
 )
+
+# %% [markdown]
+# ## Default bank
+#
+# Almost every entry has `is_sampled=False`, so `sample()` returns the `.value`
+# you set. Membrane time constant `tau_m_ms` is derived:
+# $C_m / g_{\mathrm{pas}} / 1000$.
+
+# %%
+parameter_bank = make_default_parameter_bank()
+sampled_parameters = parameter_bank.sample()
+print("type:", type(parameter_bank).__name__, "→", type(sampled_parameters).__name__)
+print("n keys:", len(sampled_parameters.index))
+print("T_ms =", sampled_parameters["T_ms"])
+print("cm_uF_per_cm2 =", sampled_parameters["cm_uF_per_cm2"])
+print("ampa_gmax_uS =", sampled_parameters["ampa_gmax_uS"])
+print("tau_m_ms (derived) =", sampled_parameters["tau_m_ms"])
 
 # %% [markdown]
 # ## Bank vs set
 #
-# A `ParameterBank` holds independent scalars/vectors plus **derived**
-# quantities. `bank.sample()` draws (or copies) values into a `ParameterSet`.
-# Derived entries are recomputed from independents at sample time.
+# A small bank shows independent vs derived entries. `g_sampled` moves
+# between draws; the rest stay fixed.
 
 # %%
 demo = ParameterBank(
@@ -81,18 +108,9 @@ print("one sample:\n", demo.sample())
 print("another sample (g_sampled moves):\n", demo.sample())
 
 # %% [markdown]
-# ## Default bank
+# ## Override values
 #
-# Almost every entry has `is_sampled=False`, so `sample()` returns the `.value`
-# you set. Membrane time constant `tau_m_ms` is derived:
-# $C_m / g_{\mathrm{pas}} / 1000$.
-
-# %%
-parameter_bank = make_default_parameter_bank()
-sampled_parameters = parameter_bank.sample()
-print("bank entries:")
-for name in sampled_parameters.index:
-    print(f"  {name}")
+# Change `.value` on the bank, then `sample()` again.
 
 # %%
 parameter_bank["T_ms"].value = 200.0
@@ -140,35 +158,40 @@ print(
 # ```
 #
 # The catalogue mechanism is `hhnotemp` (temperature is a separate `temp_K`
-# parameter). See notebook 11.
+# parameter). See `mechanisms`.
 
 # %% [markdown]
 # ## ICx-like leak vs package default
 #
-# `make_icx_parameter_bank()` uses a smaller leak (Sanculi-like). In-vivo leak
-# is often taken as ~3× the in-vitro Sanculi value.
+# `make_icx_parameter_bank_invitro()` uses Sanculi patch-clamp leak.
+# `make_icx_parameter_bank_invivo()` uses ~3× that leak (living owl;
+# Peña and Konishi 2002).
 
 # %%
-icx = make_icx_parameter_bank().sample()
+invitro = make_icx_parameter_bank_invitro().sample()
+invivo = make_icx_parameter_bank_invivo().sample()
 default = make_default_parameter_bank().sample()
 print("default  g_pas =", default["pas_leak_g_S_per_cm2"], " tau_m_ms =", default["tau_m_ms"])
-print("icx      g_pas =", icx["pas_leak_g_S_per_cm2"], " tau_m_ms =", icx["tau_m_ms"])
+print("invitro  g_pas =", invitro["pas_leak_g_S_per_cm2"], " tau_m_ms =", invitro["tau_m_ms"])
+print("invivo   g_pas =", invivo["pas_leak_g_S_per_cm2"], " tau_m_ms =", invivo["tau_m_ms"])
 
 # %% [markdown]
 # ## Where experiments override
 #
-# Do not fork the factory for one spine. In `simulations/ts1/params.py`:
+# Axon studies return the invivo bank from `simulations/ts{id}/params.py`.
+# Uncomment another factory or set `.value` for a per-spine change:
 #
 # ```python
 # def make_parameter_bank():
-#     parameter_bank = make_default_parameter_bank()
-#     # parameter_bank["pas_leak_g_S_per_cm2"].value = 0.0005
-#     # parameter_bank["ampa_gmax_uS"].value = 0.008
+#     # parameter_bank = make_default_parameter_bank()
+#     # parameter_bank = make_icx_parameter_bank_invitro()
+#     parameter_bank = make_icx_parameter_bank_invivo()
 #     return parameter_bank
 # ```
 #
-# Notebook 13 samples a short-run bank the same way, then passes the
-# `ParameterSet` into `TSSimulator`.
+# This tutorial series samples `make_default_parameter_bank()` instead.
+# `tssimulator` does that for a short run, then passes the `ParameterSet`
+# into `TSSimulator`.
 
 # %% [markdown]
 # ## Sanculi $C_m$
