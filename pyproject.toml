@@ -1,13 +1,14 @@
 [project]
 name = "toric-spines-sim"
 version = "0.1.0"
-description = "Arbor simulations of barn-owl toric spines (Sanculi et al., 2020)"
+description = "Simulations of barn-owl toric spines (Sanculi et al., 2020) with cable loops closed exactly"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "arbor>=0.11.0",
     "dill>=0.4.1",
     "ipykernel>=6.30.1",
+    # loop export edits jaxley's private `_comp_edges`; see simulation/jaxley_backend.py
+    "jaxley>=0.14,<0.15",
     "jscip",
     "jupyter>=1.1.1",
     "kaleido>=1.2.0",
@@ -53,4 +54,9 @@ docs = [
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.6",
     "mkdocstrings[python]>=0.30",
+]
+# Frozen Arbor model + evidence scripts (scripts/arbor_evidence): why Arbor's
+# gap junctions cannot close cable loops. Not needed for simulations.
+arbor-evidence = [
+    "arbor>=0.11.0",
 ]

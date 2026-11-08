@@ -21,7 +21,7 @@
 # 1. XYZ synapse locations file (`TS{id}_synpts.txt`), one row per synapse.
 # 2. `SynapsePopulation` builds a `SynapsePoint` per row (`syn_0`, `syn_1`, …).
 # 3. `TSModel` places each point on the morphology under that label.
-# 4. `TSRecipe` / `TSSimulator` attach event stream `i` to `syn_i`.
+# 4. `TSSimulator` attaches event stream `i` to `syn_i`.
 #
 
 # %%
@@ -57,14 +57,13 @@ nff_path = get_data_path("nff", f"{spine_id}_AZ.nff")
 # location (in the same coordinate space as the swc model), synapse model/mechanism,
 # and mechanism parameters.
 #
-# When creating a `SynapsePoint`, you don't need to specify the NMODL mechanism specifically: there is a
-# structured dict called `MODEL_REGISTRY` that handles wiring synapse
-# model names to the NMODL mechanism, as well as routing from your simulation 
-# parameters to the synapse.
+# When creating a `SynapsePoint`, you only name the model (`ampa`, `nmda`, ...):
+# `MODEL_REGISTRY` routes your simulation parameters to the synapse, and
+# `model.synaptic` turns them into conductance kinetics (`mechanisms`).
 #
 # Each site is a `SynapsePoint`: `location`, `model` (registry key),
-# `mechanism` (NMODL name), `synapse_params` (human-readable), and
-# `mechanism_params` (Arbor names). Construct a one-site population from a
+# `mechanism` (legacy NMODL name), `synapse_params` (what the solvers use), and
+# `mechanism_params` (legacy NMODL names). Construct a one-site population from a
 # location list — the same class `from_file` uses for every row.
 
 # %%
@@ -178,4 +177,4 @@ print("syn_0 model / mechanism:", syn0.model, "/", syn0.mechanism)
 # a timestamp file, or a generator (`events_basic`) — passed as a `TsGroup`
 # to `TSSimulator` (`tssimulator`). Axon-order data needs a remap
 # (`events_advanced`). For receptors other than AMPA, pass a synapse dict
-# into `TSModel` (`synapses_advanced`, `tsmodel_and_tsrecipe`).
+# into `TSModel` (`synapses_advanced`, `tsmodel_and_solvers`).

@@ -21,10 +21,10 @@
 # `TSSimulator`, then call `run()`. Synapses are always AMPA from the points
 # file. Existing spike times can go straight into a `TsGroup`
 # (`events_basic`); generators are optional. For receptors other than AMPA,
-# use `TSModel` (`synapses_advanced`, `tsmodel_and_tsrecipe`) rather than
+# use `TSModel` (`synapses_advanced`, `tsmodel_and_solvers`) rather than
 # `TSSimulator`.
 #
-# Needs the NMODL catalogue (`mechanisms`). Result analysis is `simulation_results`.
+# Result analysis is `simulation_results`.
 #
 # Full axon PDF / Dash studies:
 #
@@ -37,13 +37,11 @@
 import pynapple as nap
 
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file
-from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.paths import get_pointset_path, get_swc_path
 from toric_spines_sim.simulation import TSSimulator, make_default_parameter_bank
 from toric_spines_sim.utils import load_xyz_points
 from toric_spines_sim.viz import RasterPlotter, TimeSeriesPlotter
 
-check_catalogue()
 
 swc_path = get_swc_path("TS1_wsink_r10um.swc", units="microns")
 synpts_path = get_pointset_path("TS1_synpts.txt", units="microns")
@@ -58,8 +56,7 @@ print("sink:  ", sink_xyz)
 #
 # Short trial, coarse discretization, sink-only recording. Hand-built
 # `TsGroup` in synpts order: two active synapses, the rest silent. Channel
-# `i` maps to `syn_i`. Dict events keyed by place tag are a `TSRecipe` path
-# (`tsmodel_and_tsrecipe`), not `TSSimulator`. Axon-order times need a remap
+# `i` maps to `syn_i`. A dict keyed by synapse label (`syn_i`) also works. Axon-order times need a remap
 # first (`events_advanced`).
 
 # %%
@@ -106,30 +103,30 @@ print("  record_points:  ", sim.record_points_spec)
 # %% [markdown]
 # ## Build steps (computed on first use, then reused)
 #
-# Construction order: synapses and GJs, then record points, then cable cell,
-# then recipe. Each step is cached on the instance. `"all"` would probe every
-# segment center (slow, large `TsdFrame`).
+# Construction order: synapses, then record points, then the model build
+# (segments, cable graph with loops closed, record nodes). Each step is cached
+# on the instance. `"all"` would probe every segment center (large `TsdFrame`).
+# `sim.solver` is the resolved solver: `"reference"` for passive models,
+# `"jaxley"` when HH is painted (override with `solver=`).
 
 # %%
 synapses = sim.build_synapses()
 print(f"synapses: {len(synapses)}")
 print("first three:", list(synapses)[:3])
-print(f"gap junctions: {len(sim.gap_junctions)}")
+print(f"loops closed: {sim.graph.n_loops} (reconnect pairs: {len(sim.reconnects)})")
 
 record_points = sim.build_record_points()
 print("record points:", record_points)
 
-cell = sim.build_cell()
-print("cell:", type(cell).__name__)
-print("n segments:", len(list(sim.segment_tree.segments)))
-
-recipe = sim.build_recipe()
-print("recipe:", type(recipe).__name__)
+model = sim.build_model()
+print("compartments:", model.graph.n_nodes)
+print("n segments:", len(sim.segment_tree.segments))
+print("solver:", sim.solver)
 
 # %% [markdown]
 # ## `run()`
 #
-# Reuses the cached cell and recipe. Event channel `i` → synapse `syn_i`.
+# Reuses the cached model. Event channel `i` → synapse `syn_i`.
 # Voltage is a pynapple `TsdFrame` (index in seconds;
 # `TimeSeriesPlotter` converts columns to ms).
 

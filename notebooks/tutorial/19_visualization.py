@@ -19,7 +19,7 @@
 # Package Plotly helpers for mesh / skeleton / SWC overlays are
 # `figure_mesh_and_skeleton`, `figure_mesh_and_swc`, and
 # `plot_morphology_frusta_3d`. This is not a general plotting course.
-# Morphology quality checks do not need Arbor. Animation and the simulation
+# Morphology quality checks need no simulator. Animation and the simulation
 # dashboard need a `SimulationResults` from `tssimulator` /
 # `simulation_results` (`RUN_PLAYBACK = False` unless building frames).
 #
@@ -28,7 +28,7 @@
 # hypergrid archive (see `docs/simulations.md`).
 
 # %%
-import arbor as A
+from toric_spines_sim.geometry import Morphology
 from swctools import PointSet, SWCModel, plot_model
 
 from toric_spines_sim.paths import (
@@ -77,9 +77,9 @@ else:
     print("skip SWC overlay: missing", swc_path_pixels)
 
 # %% [markdown]
-# ## SWC frusta (swctools vs Arbor)
+# ## SWC frusta (swctools vs the package morphology)
 #
-# `plot_model` is swctools. `plot_morphology_frusta_3d` draws the Arbor
+# `plot_model` is swctools. `plot_morphology_frusta_3d` draws the package
 # morphology loaded from the same file.
 
 # %%
@@ -103,8 +103,8 @@ fig_swctools = plot_model(
 print("plot_model →", type(fig_swctools).__name__)
 fig_swctools.show()
 
-morph = A.load_swc_arbor(str(swc_path_microns))
-print("Arbor morphology:", type(morph).__name__)
+morph = Morphology.from_swc(swc_path_microns)
+print("morphology:", type(morph).__name__, morph.num_branches, "branches")
 synpts = load_xyz_points(synpts_path)
 fig_frusta = plot_morphology_frusta_3d(
     morph,

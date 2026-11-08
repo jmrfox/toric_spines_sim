@@ -13,11 +13,8 @@ uv run python -m simulations.ts2.ts2_integration
 uv run python -m simulations.ts2.ts2_integration --verbose
 ```
 
-Build the NMODL catalogue first if `toric_spines_sim/mechanisms/custom-catalogue.so` is missing:
-
-```bash
-uv run bash scripts/make_custom_catalogue.sh
-```
+Nothing needs compiling. Passive studies run on the scipy reference solver and
+HH studies on jaxley (`TSSimulator(solver="auto")`); both close the spine's loops.
 
 Precomputed morphologies already in `data/` are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Synapse coordinates are `data/pointsets/microns/TS{id}_synpts.txt`.
 

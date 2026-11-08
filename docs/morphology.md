@@ -32,7 +32,7 @@ Review mesh vs skeleton in `notebooks/tutorial/02_pymcfs_basic` (`SHOW_ALL = Tru
 
 ## 3. Fit SWC cables
 
-mascaf fit → `data/swc/pixels/TS{id}.swc`. SWC is a tree, so cycle-forming node pairs are stored as `# CYCLE_BREAK` (and `# MULTI_NECK` when needed) comments. Those directives are read when building the Arbor model so loops become gap junctions.
+mascaf fit → `data/swc/pixels/TS{id}.swc`. SWC is a tree, so cycle-forming node pairs are stored as `# CYCLE_BREAK` (and `# MULTI_NECK` when needed) comments. Those directives are read at simulation time: `TSModel.build()` merges each pair back into one node, so both solvers (scipy reference and jaxley) simulate the closed loops exactly.
 
 `FitOptions.max_edge_length` is the maximum MorphologyGraph edge length in mesh coordinates. A larger maximum edge length produces coarser compartments. This repo sets it to a fraction of the mesh bounding-box diagonal (`--max-edge-length-frac`, default 0.08) so spines of different sizes share a relative resolution. Prefer the largest maximum edge length that still matches mesh structure, volume, and surface area. `--basis-optimize` runs mascaf’s basis refinement before radius fitting.
 

@@ -1,8 +1,9 @@
-: NMDA synapse mechanism with dual-exponential decay
+: NMDA synapse: dual exponential, peak-normalized so gmax is the peak conductance (uS)
+: for one unit-weight event (before Mg block).
 
 NEURON {
     POINT_PROCESS nmdasyn
-    RANGE gmax, e, tau_r, tau_d
+    RANGE gmax, e, tau_r, tau_d, mg
     NONSPECIFIC_CURRENT i
 }
 
@@ -18,11 +19,13 @@ PARAMETER {
     e = 0 (mV)
     tau_r = 0.5 (ms)
     tau_d = 50 (ms)
+    mg = 1.0 (mM)
 }
 
 ASSIGNED {
     mg_block
     g (uS)
+    factor
 }
 
 STATE {
@@ -33,12 +36,17 @@ STATE {
 INITIAL {
     r = 0
     d = 0
+    : peak normalization so one unit-weight event peaks at gmax (as Exp2Syn)
+    LOCAL tp
+    tp = (tau_r*tau_d)/(tau_d - tau_r)*log(tau_d/tau_r)
+    factor = 1/(exp(-tp/tau_d) - exp(-tp/tau_r))
 }
 
 BREAKPOINT {
     SOLVE state_deriv METHOD cnexp
-    mg_block = 1 / (1 + 0.33 * exp(-0.06 * v))
-    g = gmax * (d - r) / (tau_d - tau_r) * mg_block
+    : Jahr & Stevens (1990), same form as effexcsyn
+    mg_block = 1 / (1 + exp(-0.062 * v) * mg / 3.57)
+    g = gmax * factor * (d - r) * mg_block
     i = g * (v - e)
 }
 

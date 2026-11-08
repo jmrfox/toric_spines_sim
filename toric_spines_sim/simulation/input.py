@@ -78,7 +78,7 @@ def remap_axon_channel_events_to_synapses(
     """Map axon-ordered event channels onto synapse point-file indices.
 
     Event generators fan out channels in axon order (axon 0 synapses, then
-    axon 1, …), but ``TSRecipe`` maps TsGroup index ``i`` to synapse
+    axon 1, …), but ``TSSimulator`` maps TsGroup index ``i`` to synapse
     ``syn_i``. This scatters axon-channel events onto the correct indices.
 
     Parameters

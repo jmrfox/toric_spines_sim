@@ -23,7 +23,7 @@
 # When an axon fires, every synapse on that axon gets the same timestamp.
 # `TSSimulator` maps by **synpts order**, so axon-order streams need a remap
 # before `run()`. A `dict` keyed by place tags (`syn_0`, …) is the
-# label-based alternative (`tsmodel_and_tsrecipe`).
+# label-based alternative (`tsmodel_and_solvers`).
 
 # %%
 import numpy as np
@@ -172,9 +172,9 @@ plotter.add_streams(synpts_order)
 plotter.show()
 
 # %% [markdown]
-# `TSRecipe` also accepts `dict[str, list[float]]` keyed by place tags
+# `TSSimulator` also accepts `dict[str, list[float]]` keyed by synapse labels
 # (`syn_0`, `syn_1`, …). That path maps by **label**, not TsGroup index.
-# See `tsmodel_and_tsrecipe`.
+# See `tsmodel_and_solvers`.
 
 # %% [markdown]
 # ## TS1 axon map → synapse order

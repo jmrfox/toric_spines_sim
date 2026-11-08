@@ -1,6 +1,6 @@
 # Simulations
 
-With a micron sink SWC and synpts in hand, instantiate the Arbor cell (`TSModel` / `TSRecipe`), restore loops with gap junctions at `# CYCLE_BREAK` / `# MULTI_NECK` sites, generate synaptic event streams, and record voltages.
+With a micron sink SWC and synpts in hand, build the model (`TSModel`), restore loops at `# CYCLE_BREAK` / `# MULTI_NECK` sites (passive runs use the loop-capable reference solver; see [Software](software.md#solvers-and-loops)), generate synaptic event streams, and record voltages.
 
 Each spine with synpts has a package under `simulations/`. Shared analysis lives in `simulations/common/`; you normally edit only the per-spine files.
 
@@ -14,18 +14,7 @@ uv run python -m simulations.ts2.ts2_integration
 uv run python -m simulations.ts2.ts2_integration --verbose
 ```
 
-Build the NMODL catalogue first if `toric_spines_sim/mechanisms/custom-catalogue.so` is missing or stale (see [Getting started](getting-started.md)). Confirm with `check_catalogue()`:
-
-```python
-from toric_spines_sim.model import check_catalogue
-check_catalogue()
-```
-
-If that raises, rebuild from the repository root:
-
-```bash
-uv run bash scripts/make_custom_catalogue.sh
-```
+Passive studies run on the scipy reference solver and studies with HH on jaxley (`TSSimulator(solver="auto")`; see [Software](software.md#solvers-and-loops)). Both close the spine's loops exactly. The TS1 axon PDF study (about 430 runs) takes about 7 minutes on a laptop CPU.
 
 Precomputed morphologies already in `data/` are `data/swc/microns/TS{id}_wsink_r10um.swc` (also `r5um`). Synapse coordinates are `data/pointsets/microns/TS{id}_synpts.txt`. Expected inputs for an axon study also include `data/ts_axons/ts{id}_axons.txt`. PDF / HTML outputs go under `simulations/ts{id}/axons/results/`.
 

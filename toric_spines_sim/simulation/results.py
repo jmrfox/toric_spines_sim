@@ -22,15 +22,13 @@ class SimulationResults:
     Attributes:
         voltage_traces: TsdFrame with voltage data (rows=time, columns=probes)
         input_events: TsGroup mapping stream indices to event timestamps
-        synapses: Dict of synapse specifications
-        gap_junctions: List of gap junction specifications
+        synapses: Dict of synapse specifications (``SynapsePoint``)
+        reconnects: SWC reconnect pairs closed as loops (``# CYCLE_BREAK`` / ``# MULTI_NECK``)
         record_points: Dict mapping probe labels to (x, y, z) coordinates
-        cell: arbor.cable_cell object
-        morphology: arbor.morphology object
-        segment_tree: arbor.segment_tree object
-        decor: arbor.decor object
-        labels: arbor.label_dict object
-        cvp: arbor.cv_policy object
+        segment_tree: ``geometry.morphology.SegmentTable`` (one frustum per SWC sample)
+        morphology: ``geometry.morphology.Morphology`` (branches, for plotting)
+        graph: ``simulation.reference.LoopCableModel`` that was simulated
+        solver: ``"jaxley"`` or ``"reference"``
         swc_filepath: Path to SWC morphology file
         synpts_filepath: Path to synapse points file
     """
@@ -39,17 +37,20 @@ class SimulationResults:
         """Initialize from a simulation results dictionary."""
         self.voltage_traces = results_dict["voltage_traces"]
         self.input_events = results_dict["input_events"]
-        self.synapses = results_dict["synapses"]
-        self.gap_junctions = results_dict["gap_junctions"]
+        self.synapses = results_dict.get("synapses", {})
+        self.reconnects = results_dict.get("reconnects", [])
         self.record_points = results_dict["record_points"]
-        self.cell = results_dict["cell"]
-        self.morphology = results_dict["morphology"]
-        self.segment_tree = results_dict["segment_tree"]
-        self.decor = results_dict["decor"]
-        self.labels = results_dict["labels"]
-        self.cvp = results_dict["cvp"]
+        self.segment_tree = results_dict.get("segment_tree")
+        self.morphology = results_dict.get("morphology")
+        self.graph = results_dict.get("graph")
         self.swc_filepath = results_dict.get("swc_filepath")
         self.synpts_filepath = results_dict.get("synpts_filepath")
+        self.solver = results_dict.get("solver")
+        if self.segment_tree is None and self.swc_filepath and Path(self.swc_filepath).exists():
+            from toric_spines_sim.geometry.morphology import Morphology, SegmentTable
+
+            self.segment_tree = SegmentTable.from_swc(self.swc_filepath)
+            self.morphology = Morphology(self.segment_tree)
 
         # Cache for segment properties
         self._segment_tags_cache = None
@@ -240,22 +241,21 @@ class SimulationResults:
             "voltage_traces": self.voltage_traces,
             "input_events": self.input_events,
             "synapses": self.synapses,
-            "gap_junctions": self.gap_junctions,
+            "reconnects": self.reconnects,
             "record_points": self.record_points,
-            "cell": self.cell,
             "morphology": self.morphology,
             "segment_tree": self.segment_tree,
-            "decor": self.decor,
-            "labels": self.labels,
-            "cvp": self.cvp,
+            "graph": self.graph,
+            "solver": self.solver,
+            "swc_filepath": self.swc_filepath,
+            "synpts_filepath": self.synpts_filepath,
         }
 
     def to_serializable_dict(self) -> Dict:
         """Convert to a dictionary containing only serializable data.
 
-        Excludes Arbor C++ objects (cell, morphology, segment_tree, decor, labels, cvp)
-        and SynapsePoint/GapJunctionPoint objects which cannot be pickled.
-        These can be reconstructed from the SWC and synapse points files if needed.
+        Geometry (segment table, morphology, graph) is not stored; ``load``
+        rebuilds the segment table from ``swc_filepath``.
         """
         # Convert TsdFrame to serializable format
         # Pynapple stores times internally in seconds; retrieve as ms
@@ -287,6 +287,9 @@ class SimulationResults:
             "voltage_traces": serializable_voltages,
             "input_events": serializable_events,
             "record_points": self.record_points,
+            "synapses": self.synapses,
+            "reconnects": list(self.reconnects),
+            "solver": self.solver,
             "swc_filepath": str(self.swc_filepath) if self.swc_filepath else None,
             "synpts_filepath": (
                 str(self.synpts_filepath) if self.synpts_filepath else None
@@ -297,10 +300,8 @@ class SimulationResults:
         """
         Save simulation results to a pickle file.
 
-        Note: Only serializable data is saved (voltages, events, record_points, metadata).
-        Arbor C++ objects (cell, morphology, segment_tree, etc.) and SynapsePoint/GapJunctionPoint
-        objects cannot be pickled and are excluded. To access these objects later, you'll need to
-        keep the original SimulationResults instance or rebuild them from the SWC and synapse files.
+        Saves voltages, events, record points, synapses and metadata. Geometry
+        is rebuilt from ``swc_filepath`` on :meth:`load`.
 
         Args:
             filepath: Path where to save the results (.pkl file).
@@ -315,7 +316,7 @@ class SimulationResults:
             # Ensure parent directory exists
             filepath.parent.mkdir(parents=True, exist_ok=True)
 
-            # Save only serializable data (Arbor C++ objects cannot be pickled)
+            # Save traces, events, record points and synapses; geometry is rebuilt on load
             serializable_data = self.to_serializable_dict()
 
             with open(filepath, "wb") as f:
@@ -323,10 +324,6 @@ class SimulationResults:
 
             file_size_mb = filepath.stat().st_size / (1024 * 1024)
             logger.info(f"Results saved successfully ({file_size_mb:.2f} MB)")
-            logger.warning(
-                "Note: Arbor objects and synapse/gap junction objects were not saved as they cannot be serialized. "
-                "Use swc_filepath and synpts_filepath to reconstruct if needed."
-            )
         except Exception as e:
             logger.error(f"Failed to save results: {e}")
             raise
@@ -336,11 +333,9 @@ class SimulationResults:
         """
         Load simulation results from a pickle file.
 
-        Note: Loaded results will not contain Arbor objects (cell, morphology, etc.)
-        or synapse/gap junction objects as these cannot be serialized. Only voltage_traces
-        (TsdFrame), input_events (TsGroup), record_points, and metadata are loaded.
-        Methods that require Arbor objects (like integrate_voltages_by_tag) will not work
-        on loaded results.
+        The segment table and morphology are rebuilt from ``swc_filepath``
+        when that file exists, so ``integrate_voltages_by_tag`` works on
+        loaded results. The simulated graph is not stored.
 
         Args:
             filepath: Path to the saved results file (.pkl).
@@ -404,19 +399,13 @@ class SimulationResults:
                 # Legacy format - empty TsGroup
                 input_events = nap.TsGroup({})
 
-            # Add None placeholders for Arbor objects that weren't saved
             full_dict = {
                 "voltage_traces": voltage_traces,
                 "input_events": input_events,
-                "synapses": {},
-                "gap_junctions": {},
+                "synapses": results_dict.get("synapses", {}),
+                "reconnects": results_dict.get("reconnects", []),
                 "record_points": results_dict.get("record_points", {}),
-                "cell": None,
-                "morphology": None,
-                "segment_tree": None,
-                "decor": None,
-                "labels": None,
-                "cvp": None,
+                "solver": results_dict.get("solver"),
                 "swc_filepath": results_dict.get("swc_filepath"),
                 "synpts_filepath": results_dict.get("synpts_filepath"),
             }
@@ -428,9 +417,6 @@ class SimulationResults:
                 logger.info(f"SWC file: {results_dict['swc_filepath']}")
             if "synpts_filepath" in results_dict:
                 logger.info(f"Synapse points file: {results_dict['synpts_filepath']}")
-            logger.warning(
-                "Note: Arbor objects and synapse/gap junction objects were not loaded (not available in saved file)"
-            )
 
             return cls(full_dict)
 

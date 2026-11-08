@@ -1,5 +1,6 @@
 : Effective excitatory (AMPA + NMDA) synapse mechanism
-: Designed for mixed-receptor and background excitatory synapses
+: Designed for mixed-receptor and background excitatory synapses.
+: Both components peak at 1 per unit event, so nmda_ratio is a peak-conductance ratio.
 
 NEURON {
     POINT_PROCESS effexcsyn
@@ -39,6 +40,7 @@ ASSIGNED {
     g (uS)
     B
     gNMDA
+    factor
 }
 
 STATE {
@@ -51,6 +53,10 @@ INITIAL {
     gA = 0
     rN = 0
     dN = 0
+    : peak normalization so one unit-weight event peaks at gmax (as Exp2Syn)
+    LOCAL tp
+    tp = (tau_nmda_rise*tau_nmda_decay)/(tau_nmda_decay - tau_nmda_rise)*log(tau_nmda_decay/tau_nmda_rise)
+    factor = 1/(exp(-tp/tau_nmda_decay) - exp(-tp/tau_nmda_rise))
 }
 
 BREAKPOINT {
@@ -59,8 +65,8 @@ BREAKPOINT {
     : Mg block
     B = 1/(1 + exp(-0.062*v)*(mg/3.57))
     
-    : NMDA conductance, normalized double exponential
-    gNMDA = (dN - rN)/(tau_nmda_decay - tau_nmda_rise)
+    : NMDA conductance, double exponential with unit peak (matches gA)
+    gNMDA = factor*(dN - rN)
     
     : Effective combination of AMPA and NMDA
     g = gmax * (

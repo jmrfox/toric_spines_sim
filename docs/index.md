@@ -1,6 +1,6 @@
 # Toric spines
 
-Arbor simulations of barn-owl **toric spines** ([Sanculi et al., 2020](https://doi.org/10.1523/ENEURO.0197-19.2019)). These are large, hole-containing (genus > 0) spines on **space-specific neurons (SSNs)** in the external nucleus of the inferior colliculus (ICx). The scientific goal is to characterize how an isolated spine integrates synaptic input, including electrical leak into the rest of the cell.
+Simulations of barn-owl **toric spines** ([Sanculi et al., 2020](https://doi.org/10.1523/ENEURO.0197-19.2019)). These are large, hole-containing (genus > 0) spines on **space-specific neurons (SSNs)** in the external nucleus of the inferior colliculus (ICx). The scientific goal is to characterize how an isolated spine integrates synaptic input, including electrical leak into the rest of the cell.
 
 This documentation is a collaborator-facing overview of the **research project**, not only the Python package. It covers reconstruction → skeleton → cable model → simulation, plus the software that sits around this repo.
 
@@ -34,13 +34,13 @@ flowchart LR
 
 Supported automation for skeletonization and cable fitting is **in this repo** via [pymcfs](https://github.com/jmrfox/pymcfs) and [mascaf](https://github.com/jmrfox/mascaf) (`uv sync`, then `scripts/skeletonize_meshes.py` / `scripts/fit_swc.py`). [CGAL](https://www.cgal.org/) / CGALLab remain valid for interactive mesh repair and for exploring mean-curvature skeletonization by hand; they are not required to run the current pipeline.
 
-High-level path in code: mesh → skeleton → SWC (`# CYCLE_BREAK` / `# MULTI_NECK`) → sink → `TSModel` / `TSRecipe` → event generators → `TSSimulator.run()` → traces, k-matrix, Dash / PDF.
+High-level path in code: mesh → skeleton → SWC (`# CYCLE_BREAK` / `# MULTI_NECK`) → sink → `TSModel` (cable graph, loops closed) → event generators → `TSSimulator.run()` → traces, k-matrix, Dash / PDF.
 
 ## Where to go next
 
-- [Getting started](getting-started.md) — clone, `uv sync`, NMODL catalogue
+- [Getting started](getting-started.md) — clone, `uv sync`, first run
 - `notebooks/tutorial/` — numbered walkthrough (one notebook per package concept)
-- [Software](software.md) — uv, Arbor, and the satellite packages
+- [Software](software.md) — uv, jaxley, the solvers, and the satellite packages
 - [From IMOD to mesh](reconstruction.md) — `imod2obj`, NFF active zones, neckpoints
 - [Skeletons](skeletons.md) — MCFS, pymcfs vs CGALLab, parameterization
 - [Morphology pipeline](morphology.md) — the commands used for spines in `data/`

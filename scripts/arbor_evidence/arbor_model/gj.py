@@ -9,6 +9,11 @@ connects them.
 
 Colocated sample pairs are expected for cycle breaks; extra-neck pairs may
 sit at different coordinates. Both cases are valid.
+
+Arbor junctions only approximate a cable joint: the peer voltage is taken
+from the start of the step, so a small weight acts as a series resistor and a
+large one decouples the sides. Passive runs should use
+``TSSimulator(solver="reference")``, which merges the pairs exactly.
 """
 
 from __future__ import annotations
@@ -54,6 +59,7 @@ class GapJunctionPoint:
 def prepare_gap_junctions(
     swc_file: Path,
     parameters: ParameterSet,
+    weight: Optional[float] = None,
 ):
     """Build gap junctions from CYCLE_BREAK and MULTI_NECK reconnect headers.
 
@@ -68,7 +74,8 @@ def prepare_gap_junctions(
     >>> gjs["gj_0"].index_pair
     (12, 13)
     """
-    weight = parameters["gj_weight"]
+    if weight is None:  # gj_weight left the parameter banks with Arbor
+        weight = float(parameters["gj_weight"]) if "gj_weight" in parameters.index else 1.0
     reconnect_pairs = parse_reconnect_pairs(swc_file)
     gap_junctions = {}
     points_by_id = read_swc_points(swc_file)

@@ -5,8 +5,8 @@ SWC encodes a directed tree. Toric-spine morphologies restore genus > 0
 electrically via header annotations (not extra SWC edges):
 
 - ``# CYCLE_BREAK reconnect i j`` — pair of samples that were split to break
-  a mesh cycle. The two samples are often colocated; they are still distinct
-  tree nodes and must map to distinct Arbor locations.
+  a mesh cycle. The two samples are often colocated; the cable graph
+  (``simulation.reference.LoopCableModel``) merges them back into one node.
 - ``# MULTI_NECK reconnect i j`` — extra neck attached to a copy of the sink
   start node (see ``geometry.sink``). These samples may or may not share XYZ.
 
@@ -28,14 +28,10 @@ from toric_spines_sim.utils import (
     equal_vectors,
 )  # noqa: F401  re-exported for backward compatibility
 
-import arbor as A
 import numpy as np
 
 from swctools import SWCModel
 from swctools.io import parse_swc
-
-# Arbor uses uint32(-1) as "no parent" on the segment tree.
-_ARBOR_NO_PARENT = 0xFFFFFFFF
 
 _RECONNECT_LINE = re.compile(
     r"#\s*(CYCLE_BREAK|MULTI_NECK)\s+reconnect\s+(\d+)\s+(\d+)\s*$",
@@ -154,123 +150,6 @@ def iter_swc_samples(swc_path: Path) -> List[Tuple[int, int, float, float, float
             )
         )
     return samples
-
-
-def _segment_length(seg) -> float:
-    p, d = seg.prox, seg.dist
-    return float(np.sqrt((d.x - p.x) ** 2 + (d.y - p.y) ** 2 + (d.z - p.z) ** 2))
-
-
-def _is_arbor_root_parent(parent_idx: int) -> bool:
-    p = int(parent_idx)
-    return p < 0 or p == _ARBOR_NO_PARENT
-
-
-def segment_tree_branches(segment_tree: A.segment_tree) -> List[List[int]]:
-    """Group segment-tree indices into Arbor branches (unbranched chains)."""
-    parents = [int(p) for p in segment_tree.parents]
-    n = len(parents)
-    children: List[List[int]] = [[] for _ in range(n)]
-    roots: List[int] = []
-    for i, parent in enumerate(parents):
-        if _is_arbor_root_parent(parent):
-            roots.append(i)
-        else:
-            children[parent].append(i)
-
-    branches: List[List[int]] = []
-    queue = list(roots)
-    while queue:
-        start = queue.pop(0)
-        branch = [start]
-        cur = start
-        while len(children[cur]) == 1:
-            nxt = children[cur][0]
-            branch.append(nxt)
-            cur = nxt
-        branches.append(branch)
-        for child in children[branch[-1]]:
-            queue.append(child)
-    return branches
-
-
-def arbor_locations_for_swc_nodes(
-    swc_path: Path,
-    morphology: A.morphology,
-    segment_tree: A.segment_tree,
-    node_ids: Iterable[int],
-) -> Dict[int, A.location]:
-    """Map SWC sample IDs to Arbor ``(branch, pos)`` at that sample's endpoint.
-
-    ``A.load_swc_arbor`` makes one segment per non-root SWC sample, in file
-    order. The distal end of segment *k* is the *k*-th non-root sample. Using
-    this mapping (not ``place_pwlin.closest`` on XYZ) keeps colocated cycle-break
-    / multi-neck copies on different branches.
-
-    Parameters
-    ----------
-    swc_path : path-like
-        SWC used to build ``segment_tree``.
-    morphology : arbor.morphology
-        Morphology corresponding to ``segment_tree``.
-    segment_tree : arbor.segment_tree
-        Tree produced by ``arbor.load_swc_arbor``.
-    node_ids : iterable of int
-        SWC sample IDs to map.
-
-    Returns
-    -------
-    dict[int, arbor.location]
-        Distal ``(branch, pos)`` for each requested sample.
-
-    Raises
-    ------
-    ValueError
-        If sample/segment counts disagree or a node ID is missing.
-
-    Examples
-    --------
-    >>> locs = arbor_locations_for_swc_nodes(path, morph, tree, [12, 13])  # doctest: +SKIP
-    >>> locs[12].branch != locs[13].branch  # colocated CYCLE_BREAK copies
-    True
-    """
-    wanted = set(int(i) for i in node_ids)
-    samples = iter_swc_samples(swc_path)
-    non_root = [s for s in samples if s[6] != -1]
-    if len(non_root) != len(segment_tree.segments):
-        raise ValueError(
-            f"SWC {swc_path} has {len(non_root)} non-root samples but Arbor "
-            f"segment tree has {len(segment_tree.segments)} segments"
-        )
-
-    node_to_seg = {sample[0]: i for i, sample in enumerate(non_root)}
-    root_ids = {sample[0] for sample in samples if sample[6] == -1}
-    branches = segment_tree_branches(segment_tree)
-    seg_to_branch_local: Dict[int, Tuple[int, int]] = {}
-    for bid, segs in enumerate(branches):
-        for local, seg_idx in enumerate(segs):
-            seg_to_branch_local[seg_idx] = (bid, local)
-
-    def distal_location(seg_idx: int) -> A.location:
-        bid, local = seg_to_branch_local[seg_idx]
-        msegs = morphology.branch_segments(bid)
-        lengths = [_segment_length(seg) for seg in msegs]
-        total = float(sum(lengths))
-        if total <= 0.0:
-            pos = 1.0
-        else:
-            pos = float(sum(lengths[: local + 1])) / total
-        return A.location(bid, pos)
-
-    locations: Dict[int, A.location] = {}
-    for node_id in wanted:
-        if node_id in node_to_seg:
-            locations[node_id] = distal_location(node_to_seg[node_id])
-        elif node_id in root_ids:
-            locations[node_id] = A.location(0, 0.0)
-        else:
-            raise ValueError(f"SWC node {node_id} not found in {swc_path}")
-    return locations
 
 
 def read_swc_points(swc_path: Path):

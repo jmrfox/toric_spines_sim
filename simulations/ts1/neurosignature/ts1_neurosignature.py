@@ -41,8 +41,8 @@ parameter_bank["dt_sim_ms"].value = 0.02
 parameter_bank["dt_record_ms"].value = 1.0
 parameter_bank["sink_radii_scale"].value = 1.0
 parameter_bank["neck_radius_scale"].value = 1.0
-# Arbor's "default" membrane capacitance = 0.01 uF/cm^2
-# but analysis from Sanculi gives O(1 uF/cm^2)
+# The default bank's membrane capacitance is 1 uF/cm^2.
+# Physiological value ~0.9 uF/cm^2 (Gentet et al. 2000); 2.0 is a choice here.
 parameter_bank["cm_uF_per_cm2"].value = 2.0
 parameter_bank["rL_ohm_cm"].value = 150
 # hh_tags empty + hh_scale 0 keeps the sink passive
@@ -50,7 +50,7 @@ hh_on = False
 parameter_bank["hh_leak_e_mV"].value = -54.3
 parameter_bank["hh_scale"].value = 1.0 if hh_on else 0.0
 # passive leak
-# Arbor's "default" leak conductance = 0.001 S/cm^2
+# The default bank's leak conductance is 0.001 S/cm^2
 leak_on = True
 if leak_on:
     parameter_bank["pas_leak_g_S_per_cm2"].value = 0.001

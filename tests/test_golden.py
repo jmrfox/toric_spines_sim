@@ -1,0 +1,120 @@
+"""Frozen Arbor baselines (migration phase 0).
+
+Arbor is correct on loop-free morphologies and was the HH reference, so its
+traces are kept in ``tests/data/golden`` (``scripts/arbor_evidence/make_golden.py``).
+Both solvers must reproduce them (loops cut, as Arbor saw them); jaxley also
+reproduces the HH cases. With the optional ``arbor-evidence`` group, Arbor
+must still reproduce the files exactly.
+"""
+
+import json
+import logging
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from toric_spines_sim.paths import get_swc_path
+from toric_spines_sim.simulation.reference import LoopCableModel, lumped_sink_overrides
+
+GOLDEN = Path(__file__).parent / "data" / "golden"
+ALL = sorted(p.stem for p in GOLDEN.glob("*.npz"))
+PASSIVE = [n for n in ALL if n.startswith(("passive_", "tree_"))]
+
+
+def load(name):
+    d = np.load(GOLDEN / f"{name}.npz", allow_pickle=True)
+    return d, json.loads(str(d["meta"]))
+
+
+def test_golden_set_is_complete():
+    assert len(ALL) == 13
+    for name in ALL:
+        d, meta = load(name)
+        assert d["V"].shape == (len(d["t_ms"]), len(d["probe_xyz"]))
+        assert sum(len(e) for e in d["event_ms"]) > 0, name
+        assert meta["arbor_version"] and meta["dt_ms"] == 0.025
+
+
+@pytest.mark.parametrize("name", PASSIVE)
+def test_reference_reproduces_passive_golden(name):
+    d, meta = load(name)
+    p = meta["parameters"]
+    case = meta["case"]
+    swc = get_swc_path(f"{case['spine']}_wsink_r10um.swc", units="microns")
+    overrides = None
+    if p["sink_lumped"] > 0:
+        overrides = lumped_sink_overrides(
+            swc, [int(p["sink_tag"]), int(p["sink_tip_tag"])], p["cell_C_pF"], p["cell_Rin_MOhm"]
+        )
+    logging.disable(logging.WARNING)
+    # Arbor saw the loops cut (no or zero-weight junctions), so cut them here too.
+    m = LoopCableModel.from_swc(
+        swc, dx_um=meta["discretization_um"], cm_uF_per_cm2=p["cm_uF_per_cm2"],
+        g_pas_S_per_cm2=p["pas_leak_g_S_per_cm2"], e_pas_mV=p["pas_leak_e_mV"],
+        rL_ohm_cm=p["rL_ohm_cm"], restore_loops=False, tag_overrides=overrides,
+    )
+    logging.disable(logging.NOTSET)
+    for xyz in d["syn_xyz"]:
+        if case["receptor"] == "ampa":
+            m.add_synapse(tuple(xyz), "ampa", gmax_uS=p["ampa_gmax_uS"], tau_ms=p["ampa_tau_ms"],
+                          e_mV=p["ampa_e_mV"])
+        else:
+            m.add_synapse(tuple(xyz), "nmda", gmax_uS=p["nmda_gmax_uS"], tau_r_ms=p["nmda_tau_r_ms"],
+                          tau_d_ms=p["nmda_tau_d_ms"], e_mV=p["nmda_e_mV"], mg_mM=p["nmda_mg_mM"])
+    events = {i: list(e) for i, e in enumerate(d["event_ms"]) if len(e)}
+    res = m.run(events, T_ms=p["T_ms"], dt_ms=meta["dt_ms"], v0_mV=p["Vrest_mV"])
+    v_ref = np.column_stack([res.V[:, m.closest_node(tuple(x))] for x in d["probe_xyz"]])
+    v_arb = d["V"]
+    n = min(len(v_ref), len(v_arb))
+    rest = p["Vrest_mV"]
+    peak_arb = (v_arb[:n] - rest).max()
+    assert peak_arb > 0.5
+    # CV (Arbor) vs node-centred (reference) discretization differ by O(dx)
+    # at the lumped sink's sharp cm/g jump; see test_reference.py.
+    assert (v_ref[:n] - rest).max() == pytest.approx(peak_arb, rel=0.015)
+    assert np.abs(v_ref[:n] - v_arb[:n]).max() < 0.03 * peak_arb
+
+
+def test_arbor_still_reproduces_golden_exactly():
+    """Only with the optional ``arbor-evidence`` group and its built catalogue."""
+    pytest.importorskip("arbor")
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parents[1] / "scripts" / "arbor_evidence"))
+    from arbor_model import CUSTOM_CATALOGUE_PATH
+
+    if not CUSTOM_CATALOGUE_PATH.exists():
+        pytest.skip("arbor-evidence catalogue not built")
+    from make_golden import _resolve, cases, run_case
+
+    logging.disable(logging.WARNING)
+    case = _resolve(next(c for c in cases() if c["name"] == "passive_TS76_in_vitro_ampa"))
+    r = run_case(case)
+    logging.disable(logging.NOTSET)
+    d, _ = load(case["name"])
+    assert np.array_equal(r["V"], d["V"])
+
+
+@pytest.mark.parametrize("name", ALL)
+def test_jaxley_reproduces_golden(name):
+    """jaxley (incl. the HH port) against the frozen Arbor traces."""
+    pytest.importorskip("jaxley")
+    from tests.golden_utils import built_model
+
+    from toric_spines_sim.simulation import jaxley_backend as jb
+
+    logging.disable(logging.WARNING)
+    d, meta, p, built, events, nodes = built_model(name)
+    v = jb.run(built.graph, events, T_ms=p["T_ms"], dt_ms=meta["dt_ms"], v0_mV=p["Vrest_mV"],
+               record_nodes=nodes, hh=built.hh)
+    logging.disable(logging.NOTSET)
+    va = d["V"]
+    n = min(len(v), len(va))
+    peak = (va[:n] - p["Vrest_mV"]).max()
+    # Same O(dx) CV-vs-node discretization difference as the reference solver.
+    assert np.abs(v[:n] - va[:n]).max() < 0.015 * peak
+    if name.startswith("hh_") and name.endswith("_spike"):
+        sink_tip = 7  # probe order in make_golden: 5 synapses, neck, sink middle, sink tip
+        assert int(np.argmax(v[:n, sink_tip])) == int(np.argmax(va[:n, sink_tip]))
+        assert v[:n, sink_tip].max() == pytest.approx(va[:n, sink_tip].max(), abs=0.1)

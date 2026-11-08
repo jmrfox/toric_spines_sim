@@ -21,27 +21,19 @@
 # reach the synapses.
 #
 # `TSSimulator` maps stream **index** `i` → `syn_i` in synpts row order.
-# Channel labels are ignored. `TSRecipe` reads pynapple times in **seconds**
-# and converts to milliseconds (`t_s * 1000`). The number of streams must
-# equal the number of synapses (silent sites are empty lists).
-#
-# Needs the NMODL catalogue:
-#
-# ```bash
-# uv run bash scripts/make_custom_catalogue.sh
-# ```
+# Channel labels are ignored. Pynapple stores times in **seconds**;
+# `TSSimulator` converts to milliseconds (`t_s * 1000`). Streams missing for
+# some synapses leave those synapses silent.
 
 # %%
 import pynapple as nap
 
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file
-from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.paths import get_pointset_path, get_swc_path
 from toric_spines_sim.simulation import TSSimulator, make_default_parameter_bank
 from toric_spines_sim.utils import load_xyz_points
 from toric_spines_sim.viz import RasterPlotter, TimeSeriesPlotter
 
-check_catalogue()
 
 swc_path = get_swc_path("TS1_wsink_r10um.swc", units="microns")
 synpts_path = get_pointset_path("TS1_synpts.txt", units="microns")
@@ -86,13 +78,13 @@ print(f"TsGroup streams: {len(events)}  (need {n_synapses})")
 print("keys:", list(events.keys())[:8], "...")
 
 # %% [markdown]
-# ## What the recipe will send to Arbor
+# ## What each synapse will receive
 #
-# Pynapple stores `Ts.index` in seconds. The recipe does `index * 1000` for
+# Pynapple stores `Ts.index` in seconds. The simulator does `index * 1000` for
 # milliseconds. Those two views should agree with the lists above.
 
 # %%
-print(f"{'i':>4}  {'label':8}  as_units(ms)          index*1000 (recipe)")
+print(f"{'i':>4}  {'label':8}  as_units(ms)          index*1000 (simulator)")
 for i in range(n_synapses):
     ts = events[i]
     as_ms = ts.as_units("ms").index.values.tolist()
@@ -100,7 +92,7 @@ for i in range(n_synapses):
     if as_ms or recipe_ms:
         print(f"{i:4d}  syn_{i:<5d}  {as_ms}  {recipe_ms}")
         if as_ms != recipe_ms:
-            print("    mismatch: as_units(ms) vs recipe conversion")
+            print("    mismatch: as_units(ms) vs simulator conversion")
 
 sim = TSSimulator(
     swc_path,
@@ -110,11 +102,9 @@ sim = TSSimulator(
     record_points={"sink": sink_xyz},
 )
 synapses = sim.build_synapses()
-recipe = sim.build_recipe()
-print("n synapses:", len(synapses))
-print("n event generators:", len(recipe._evgens))
-print("recipe times (ms) for active labels:")
-for label, t_list in recipe._events_ms.items():
+print("n synapses:", len(synapses), "| solver:", sim.solver)
+print("times (ms) for active labels:")
+for label, t_list in sim.events_ms().items():
     if t_list:
         print(f"  {label}: {t_list}")
 
@@ -147,7 +137,7 @@ raster.show()
 # %% [markdown]
 # ## Two constructions that fail or fire at the wrong time
 #
-# 1. Fewer streams than synapses → `ValueError` in `TSRecipe`.
+# 1. Fewer streams than synapses: the missing synapses are silent (not an error).
 # 2. Times passed without `time_units="ms"` are treated as **seconds**, then
 #    multiplied by 1000, so `t=[10.0]` becomes 10 s → 10000 ms (past `T_ms`).
 
@@ -160,24 +150,17 @@ short_group = nap.TsGroup(
     time_support=nap.IntervalSet(start=[0], end=[t_ms], time_units="ms"),
 )
 print("short TsGroup length:", len(short_group), "vs n_synapses", n_synapses)
-try:
-    TSSimulator(
-        swc_path,
-        synpts_path,
-        short_group,
-        parameters,
-        record_points={"sink": sink_xyz},
-    ).build_recipe()
-except ValueError as exc:
-    print("expected error (too few streams):", exc)
+short = TSSimulator(swc_path, synpts_path, short_group, parameters, record_points={"sink": sink_xyz})
+active = {k: v for k, v in short.events_ms().items() if v}
+print("active synapses with the short group:", active)
 
 wrong_units = nap.Ts(t=[10.0, 40.0])  # default: seconds
 print(
-    "t=[10, 40] with default units → recipe ms:",
+    "t=[10, 40] with default units → simulator ms:",
     (wrong_units.index.values * 1000.0).tolist(),
     "(wanted 10 and 40 ms)",
 )
 print(
-    "t=[10, 40] with time_units='ms' → recipe ms:",
+    "t=[10, 40] with time_units='ms' → simulator ms:",
     (nap.Ts(t=[10.0, 40.0], time_units="ms").index.values * 1000.0).tolist(),
 )

@@ -2,15 +2,15 @@
 
 The library lives in `toric_spines_sim/`. Full signatures and docstrings are in the [API reference](api/index.md).
 
-- [`geometry/`](api/geometry.md) — SWC I/O, cycle breaks, mesh→skeleton→SWC, sink append, dendrite helpers
-- [`model/`](api/model.md) — `TSModel`, synapses, gap junctions, `TSRecipe`, `check_catalogue`
-- [`simulation/`](api/simulation.md) — parameters, `TSSimulator`, inputs, `SimulationResults`
+- [`geometry/`](api/geometry.md) — SWC I/O, cycle breaks, `SegmentTable` / `Morphology`, mesh→skeleton→SWC, sink append, dendrite helpers
+- [`model/`](api/model.md) — `TSModel` / `BuiltModel`, synapses and their kinetics (`synaptic`), `HHSpec`
+- [`simulation/`](api/simulation.md) — parameters, `TSSimulator`, the reference solver and jaxley backend, inputs, `SimulationResults`
 - [`events/`](api/events.md) — event generators / rate curves
 - [`viz/`](api/viz.md) — Plotly / Dash / animation helpers
 - [`kmatrix.py`](api/kmatrix.md), [`report.py`](api/report.md) — pairwise integration analysis / PDF reporting
 - [`paths.py`](api/paths.md) — repo-root data paths (`get_swc_path`, …)
 
-Temperature is Kelvin (in vitro ~297 K; barn owl in vivo ~313 K). Capacitance is µF/cm²; leak is S/cm²; axial resistivity is Ω·cm. See [Software](software.md#biophysics-notes) for ICx in-vitro / in-vivo banks.
+Temperature is Kelvin (Sanculi slices ~296 K; barn owl in vivo ~313 K). Capacitance is µF/cm²; leak is S/cm²; axial resistivity is Ω·cm. See [Software](software.md#biophysics-notes) for ICx in-vitro / in-vivo banks.
 
 ## Path helpers
 

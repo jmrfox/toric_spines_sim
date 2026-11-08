@@ -1,5 +1,5 @@
 site_name: toric_spines_sim
-site_description: Arbor simulations of barn-owl toric spines (Sanculi et al., 2020)
+site_description: Simulations of barn-owl toric spines (Sanculi et al., 2020) with cable loops closed exactly
 site_url: https://jmrfox.github.io/toric_spines_sim/
 repo_url: https://github.com/jmrfox/toric_spines_sim
 repo_name: jmrfox/toric_spines_sim

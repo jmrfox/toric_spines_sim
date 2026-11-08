@@ -1,5 +1,5 @@
 # model
 
-Cell morphology and recipe definitions for toric spine models.
+Model description (`TSModel`), the built cable graph, and synaptic kinetics.
 
 ::: toric_spines_sim.model

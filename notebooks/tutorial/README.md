@@ -13,9 +13,9 @@ uv run jupytext --sync notebooks/tutorial/*.py
 ```
 
 By default they load precomputed data files from `data/`. Set `RECOMPUTE = True` if you want to re-run the calculation; output then goes to `notebooks/tutorial/_artifacts/` so `data/` is not overwritten.
-Expensive pymcfs / mascaf / sink cells default to `RECOMPUTE = False`. Optional all-spine galleries stay behind `SHOW_ALL = False`. The NMODL catalogue is needed from `mechanisms` through `kmatrix`, except `pdf_reports` (`uv run bash scripts/make_custom_catalogue.sh`). Refer to the docs if you have not built the catalogue yet. 
+Expensive pymcfs / mascaf / sink cells default to `RECOMPUTE = False`. Optional all-spine galleries stay behind `SHOW_ALL = False`.sh`). 
 
-IMOD reconstruction and CGALLab are not in this series — see [From IMOD to mesh](../../docs/reconstruction.md) and [Skeletons](../../docs/skeletons.md). A raw Arbor example (not `TSSimulator`) is `notebooks/misc/arbor_cable_cell.py`.
+IMOD reconstruction and CGALLab are not in this series — see [From IMOD to mesh](../../docs/reconstruction.md) and [Skeletons](../../docs/skeletons.md). The old raw Arbor primer moved to `scripts/arbor_evidence/notebooks/arbor_cable_cell.py` (optional `arbor-evidence` group).
 
 ### Morphology
 
@@ -38,13 +38,13 @@ IMOD reconstruction and CGALLab are not in this series — see [From IMOD to mes
 | `10_synapses_advanced` | `MODEL_REGISTRY`, mixed populations, labels vs indices, axon maps |
 | `11_events_basic` | Bring-your-own times (lists and labeled timestamp files), then generators |
 | `12_events_advanced` | Other rate curves, shared routing, axon-order remap |
-| `13_mechanisms` | NMODL catalogue, `MODEL_REGISTRY` |
+| `13_mechanisms` | Synaptic kinetics (`model.synaptic`), `MODEL_REGISTRY`, Mg block, HH |
 
 ### Model and simulation
 
 | Notebook | Topic |
 |----------|--------|
-| `14_tsmodel_and_tsrecipe` | `TSModel.build_cell()`, gap junctions, `TSRecipe` |
+| `14_tsmodel_and_solvers` | `TSModel.build()`, the cable graph with loops closed, reference vs jaxley |
 | `15_tssimulator` | `TSSimulator` high-level interface and `run()` |
 | `16_simulation_results` | traces, `integrate_voltages_by_tag`, save/load |
 
@@ -54,8 +54,8 @@ IMOD reconstruction and CGALLab are not in this series — see [From IMOD to mes
 |----------|--------|
 | `17_pdf_reports` | `PdfReport` |
 | `18_kmatrix` | Pairwise $k$ (TS1, then cylinder / TS2) |
-| `19_visualization` | Mesh/SWC/Arbor figures; animation and Dash pointers |
+| `19_visualization` | Mesh/SWC/morphology figures; animation and Dash pointers |
 | `20_geodesics_and_compartments` | Graph distances and compartment labels |
 | `21_spiny_dendrite` | Synthetic classical-spine comparison morphology |
 
-Extra demos stay under `notebooks/misc/` (including an earlier spiny-dendrite notebook and a raw Arbor example). Full axon PDF study: `uv run python -m simulations.ts1.axons`.
+Extra demos stay under `notebooks/misc/` (including an earlier spiny-dendrite notebook and custom event groups). Full axon PDF study: `uv run python -m simulations.ts1.axons`.

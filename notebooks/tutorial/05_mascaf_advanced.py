@@ -125,5 +125,5 @@ else:
 # )
 # ```
 #
-# `# CYCLE_BREAK` pairs still come from the tree export; `tsmodel_and_tsrecipe` restores
-# them as gap junctions.
+# `# CYCLE_BREAK` pairs still come from the tree export; `TSModel.build()`
+# closes them again as loops (`tsmodel_and_solvers`).

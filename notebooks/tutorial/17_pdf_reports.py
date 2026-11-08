@@ -20,7 +20,7 @@
 # `PdfReport` (a thin wrapper around ReportLab): `add_*` methods, then
 # `build()`. Production axon PDFs live in `simulations/ts{id}/`
 # (`python -m simulations.ts1.axons`). This notebook writes a short example
-# under `_artifacts/` and does not run Arbor.
+# under `_artifacts/` and does not run a simulation.
 
 # %%
 from toric_spines_sim.events import DeterministicEventGenerator, FlatRateCurve

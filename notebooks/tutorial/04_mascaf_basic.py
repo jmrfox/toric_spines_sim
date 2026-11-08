@@ -18,8 +18,8 @@
 #
 # To fit a 1D cable to a mesh and a pymcfs skeleton, use `fit_swc`, the
 # package wrapper around [mascaf](https://mascaf.readthedocs.io/en/latest/).
-# The result is a pixel SWC plus `# CYCLE_BREAK` headers that later become
-# gap junctions (`tsmodel_and_tsrecipe`). Option-by-option detail is
+# The result is a pixel SWC plus `# CYCLE_BREAK` headers that the cable
+# graph later merges back into closed loops (`tsmodel_and_solvers`). Option-by-option detail is
 # `mascaf_advanced`.
 #
 # SWC is a tree, so loop-forming node pairs are stored as comments.
@@ -104,7 +104,7 @@ print("SWC:     ", swc_path)
 #
 # Each `# CYCLE_BREAK reconnect i j` pair is two SWC nodes that should be
 # electrically coupled. `# MULTI_NECK` is the same idea for extra necks.
-# `tsmodel_and_tsrecipe` turns those headers into `GapJunctionPoint`s.
+# `TSModel.build()` merges each pair back into one node (`tsmodel_and_solvers`).
 
 # %%
 cycle_breaks = parse_cycle_breaks(swc_path)

@@ -13,7 +13,7 @@ from jscip import ParameterSet
 import pynapple as nap
 
 from toric_spines_sim.model.synapse import SynapsePoint
-from toric_spines_sim.model.gj import GapJunctionPoint
+from .gj import GapJunctionPoint
 
 
 class TSRecipe(A.recipe):
@@ -187,7 +187,12 @@ class TSRecipe(A.recipe):
         for gj_label, gj in self._gap_junctions.items():
             a_label = gj_label + "_a"
             b_label = gj_label + "_b"
-            weight = float(gj.weight or 1.0)
+            if gj.weight is None:
+                raise ValueError(f"Gap junction {gj_label} has no weight")
+            weight = float(gj.weight)
+            if weight <= 0.0:
+                # Arbor treats weight as a conductance scale; 0 means "no junction".
+                continue
             peer_b = A.cell_global_label((gid, b_label))
             loc_a = A.cell_local_label(a_label, A.selection_policy.round_robin)
             connections.append(A.gap_junction_connection(peer_b, loc_a, weight))

@@ -1,6 +1,6 @@
 """Visualization utilities for morphology and simulation results."""
 
-from .arbor import (
+from .morphology import (
     COLORS,
     VizConfig,
     draw_morphology,

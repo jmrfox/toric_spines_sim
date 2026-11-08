@@ -2,6 +2,7 @@
 
 from .parameters import (
     make_default_parameter_bank,
+    make_icx_parameter_bank,
     make_icx_parameter_bank_invitro,
     make_icx_parameter_bank_invivo,
 )
@@ -15,6 +16,7 @@ from .input import (
 
 __all__ = [
     "make_default_parameter_bank",
+    "make_icx_parameter_bank",
     "make_icx_parameter_bank_invitro",
     "make_icx_parameter_bank_invivo",
     "SimulationResults",

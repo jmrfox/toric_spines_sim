@@ -69,7 +69,9 @@ def main() -> None:
     parameter_bank["dt_record_ms"].value = 1.0
     parameter_bank["sink_radii_scale"].value = 1.0
     parameter_bank["neck_radius_scale"].value = 1.0
-    parameter_bank["temp_K"].value = 273  # in vivo ~ 313 K
+    # temp_K is not read by HH or the passive membrane (no Q10 in this default bank).
+    parameter_bank["temp_K"].value = 273
+    # NOTE: ~11x the physiological 0.9 uF/cm^2 (Gentet et al. 2000).
     parameter_bank["cm_uF_per_cm2"].value = 10.0
     parameter_bank["rL_ohm_cm"].value = 100
     hh_scale = 1.0
@@ -114,8 +116,11 @@ def main() -> None:
     results.save(results_filepath)
     logger.info("Wrote results to %s", results_filepath)
 
-    time_spine, v_spine = results.integrate_voltages_by_tag(3, method="average")
-    time_sink, v_sink = results.integrate_voltages_by_tag(5, method="average")
+    # integrate_voltages_by_tag returns a pynapple Tsd (time in s)
+    tsd_spine = results.integrate_voltages_by_tag(3, method="average")
+    tsd_sink = results.integrate_voltages_by_tag(5, method="average")
+    time_spine, v_spine = tsd_spine.index.values * 1000.0, tsd_spine.values
+    time_sink, v_sink = tsd_sink.index.values * 1000.0, tsd_sink.values
 
     logger.info("Generating PDF report at %s", report_filepath)
     report = PdfReport(str(report_filepath))

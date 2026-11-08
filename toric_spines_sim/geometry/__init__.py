@@ -1,8 +1,13 @@
 """Morphology geometry and transformation utilities."""
 
-from .rescale import (
-    scale_one_radius_in_segment_tree_by_coordinates,
-    scale_radii_in_segment_tree_by_tag,
+from .morphology import (
+    Location,
+    MPoint,
+    MSegment,
+    Morphology,
+    PlacePwlin,
+    SegmentTable,
+    place_pwlin,
 )
 from .graph import (
     compute_geodesic_distances,
@@ -17,7 +22,6 @@ from .swc import (
     parse_reconnect_pairs,
     read_swc_points,
     get_center_coordinates_for_all_segments,
-    arbor_locations_for_swc_nodes,
 )
 from .sink import (
     SinkGeometry,
@@ -74,8 +78,13 @@ from .prepare import (
 )
 
 __all__ = [
-    "scale_one_radius_in_segment_tree_by_coordinates",
-    "scale_radii_in_segment_tree_by_tag",
+    "Location",
+    "MPoint",
+    "MSegment",
+    "Morphology",
+    "PlacePwlin",
+    "SegmentTable",
+    "place_pwlin",
     "compute_geodesic_distances",
     "classify_compartments",
     "geodesic_distances_from_probe",
@@ -86,7 +95,6 @@ __all__ = [
     "parse_reconnect_pairs",
     "read_swc_points",
     "get_center_coordinates_for_all_segments",
-    "arbor_locations_for_swc_nodes",
     "SinkGeometry",
     "sink_endpoint_location_from_swc_file",
     "neck_point_from_swc_file",

@@ -8,7 +8,7 @@ Use `toric_spines_sim.paths` instead of `../../data/...` (see [Path helpers](pac
 toric_spines_sim/
   data/                 morphologies and pointsets used by sims
   notebooks/            tutorial walkthrough + misc demos
-  scripts/              CLI for mesh → SWC → sink (and catalogue build)
+  scripts/              CLI for mesh → SWC → sink; diagnostics; arbor_evidence/
   simulations/          per-spine experiments (edit params here)
   toric_spines_sim/     Python package (geometry, model, simulator, viz)
   tests/
@@ -22,7 +22,7 @@ toric_spines_sim/
 | `toric_spines_sim/` | Library: SWC I/O, sink append, `TSModel`, `TSSimulator`, events, viz |
 | `simulations/` | One folder per spine plus shared axon-study code |
 | `notebooks/tutorial/` | Numbered walkthrough (one notebook per package concept: mesh → simulate → k-matrix / viz) |
-| `notebooks/misc/` | Extra demos (spiny dendrite, neurosignature, raw Arbor primer) |
+| `notebooks/misc/` | Extra demos (spiny dendrite, neurosignature, custom event groups) |
 | `archive/` | Historical scripts and morphologies |
 
 ## Data layout

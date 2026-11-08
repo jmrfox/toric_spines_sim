@@ -40,7 +40,7 @@
 #
 # Units:
 # - time: ms
-# - temperature: Kelvin (in vitro ~297 K; barn owl in vivo ~313 K)
+# - temperature: Kelvin (Sanculi slices ~296 K; barn owl in vivo ~313 K)
 # - membrane capacitance `cm_uF_per_cm2`: µF/cm²
 # - leak `pas_leak_g_S_per_cm2`: S/cm²
 # - axial resistivity `rL_ohm_cm`: Ω·cm
@@ -157,15 +157,17 @@ print(
 # parameters["hh_scale"] = 1.0
 # ```
 #
-# The catalogue mechanism is `hhnotemp` (temperature is a separate `temp_K`
-# parameter). See `mechanisms`.
+# HH uses the same rates as the old `hhnotemp` (no temperature scaling;
+# `temp_K` acts only through the factory's Q10 layer). See `mechanisms`.
 
 # %% [markdown]
 # ## ICx-like leak vs package default
 #
-# `make_icx_parameter_bank_invitro()` uses Sanculi patch-clamp leak.
-# `make_icx_parameter_bank_invivo()` uses ~3× that leak (living owl;
-# Peña and Konishi 2002).
+# `make_icx_parameter_bank_invitro()` uses Sanculi whole-cell values at room
+# temperature (cm 0.9 µF/cm², g_pas = cm / (Rin·C)).
+# `make_icx_parameter_bank_invivo()` scales leak, Ri and synaptic kinetics
+# to 313 K with Q10s, and `make_icx_parameter_bank("in_vivo", background=...)`
+# adds a swept background shunt. See docs/software.md, Biophysics notes.
 
 # %%
 invitro = make_icx_parameter_bank_invitro().sample()

@@ -111,7 +111,7 @@ def simulation_probe_dict(
     event_type: str = "poisson",
     probe_label: str = "probe_0",
 ) -> Dict:
-    """Like ``simulation`` but returns the older ``{"probe": arbor-samples, ...}`` dict.
+    """Like ``simulation`` but returns the older ``{"probe": samples, ...}`` dict.
 
     Notebooks that call ``add_time_series_from_arbor(results["probe"])`` can
     import this as ``simulation``.
@@ -131,14 +131,9 @@ def simulation_probe_dict(
         "probe": probe,
         "events": results.input_events,
         "synapses": results.synapses,
-        "gap_junctions": results.gap_junctions,
         "record_points": results.record_points,
-        "cell": results.cell,
         "morphology": results.morphology,
         "segment_tree": results.segment_tree,
-        "decor": results.decor,
-        "labels": results.labels,
-        "cvp": results.cvp,
         "results": results,
     }
 

@@ -206,4 +206,4 @@ uv sync --group neurosignature
 uv run python -m simulations.ts1.neurosignature.ts1_neurosignature
 ```
 
-Inputs: micron TS1 sink SWC, synpts, and neckpoint. Outputs under `simulations/ts1/results/`: descriptor `.npy` files and diagnostic figures. The example notebook uses a CTRNN instead of Arbor so you can see `InputGenerator` / `Simulator` / `VectorDescriptor` / `Experiment` without building the NMODL catalogue.
+Inputs: micron TS1 sink SWC, synpts, and neckpoint. Outputs under `simulations/ts1/results/`: descriptor `.npy` files and diagnostic figures. The example notebook uses a CTRNN instead of the cable model so you can see `InputGenerator` / `Simulator` / `VectorDescriptor` / `Experiment` without running a spine simulation.

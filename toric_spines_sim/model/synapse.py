@@ -39,18 +39,21 @@ MODEL_REGISTRY: Dict[str, Dict[str, object]] = {
             "nmda_e_mV",
             "nmda_tau_r_ms",
             "nmda_tau_d_ms",
+            "nmda_mg_mM",
         ],
         "synapse_params": {
             "gmax_uS": "nmda_gmax_uS",
             "e_mV": "nmda_e_mV",
             "tau_r_ms": "nmda_tau_r_ms",
             "tau_d_ms": "nmda_tau_d_ms",
+            "mg_mM": "nmda_mg_mM",
         },
         "mechanism_params": {
             "gmax": "gmax_uS",
             "e": "e_mV",
             "tau_r": "tau_r_ms",
             "tau_d": "tau_d_ms",
+            "mg": "mg_mM",
         },
     },
     "gabaa": {
@@ -126,7 +129,7 @@ class SynapsePoint:
     """One placed synapse: XYZ, mechanism name, and parameter dicts.
 
     ``synapse_params`` uses human-readable keys (``gmax_uS``, ``tau_ms``, …).
-    ``mechanism_params`` is the same values renamed for Arbor (``gmax``,
+    ``mechanism_params`` is the same values under the legacy NMODL names (``gmax``,
     ``tau``, …). ``TSModel`` applies ``mechanism_params``.
 
     Attributes

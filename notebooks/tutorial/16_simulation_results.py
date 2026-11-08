@@ -19,9 +19,7 @@
 # `TSSimulator.run()` returns a `SimulationResults` object: voltage traces
 # as a pynapple `TsdFrame`, input events, synapse and morphology objects,
 # plus helpers to save or load the run (dill) and
-# `integrate_voltages_by_tag`. The NMODL catalogue (`mechanisms`) is
-# required. The short run uses the same TS1 micron files from `data/` as
-# `tssimulator`.
+# `integrate_voltages_by_tag`. # `tssimulator`.
 #
 # `integrate_voltages_by_tag` only sees probes that were recorded. A sink-only
 # run can average tag 5/6; averaging the spine (tag 3) needs `"all"` probes
@@ -30,7 +28,6 @@
 # %%
 from toric_spines_sim.events import FlatRateCurve, StochasticEventGenerator
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file
-from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.paths import (
     NOTEBOOKS_DIR,
     get_pointset_path,
@@ -44,7 +41,6 @@ from toric_spines_sim.simulation import (
 from toric_spines_sim.utils import load_xyz_points
 from toric_spines_sim.viz import TimeSeriesPlotter
 
-check_catalogue()
 
 tutorial_output_dir = NOTEBOOKS_DIR / "tutorial" / "_artifacts"
 swc_path = get_swc_path("TS1_wsink_r10um.swc", units="microns")
@@ -86,7 +82,8 @@ print("  voltage_traces:", type(results.voltage_traces).__name__, results.voltag
 print("  columns:", list(results.voltage_traces.columns))
 print("  n input streams:", len(results.input_events))
 print("  n synapses:", len(results.synapses))
-print("  n gap junctions:", len(results.gap_junctions))
+print("  reconnect pairs (loops closed):", len(results.reconnects))
+print("  solver:", results.solver)
 print("  record_points:", results.record_points)
 print("  swc_filepath:", results.swc_filepath)
 print("  synpts_filepath:", results.synpts_filepath)
@@ -117,8 +114,8 @@ except ValueError as exc:
 # %% [markdown]
 # ## Save / load
 #
-# Dill pickle. Arbor objects inside the results are part of the data written
-# to the pickle — load on the same Arbor version you used to run.
+# Dill pickle of traces, events, record points and synapses. `load` rebuilds
+# the segment table from `swc_filepath`, so tag-based analysis still works.
 
 # %%
 tutorial_output_dir.mkdir(parents=True, exist_ok=True)
@@ -129,6 +126,6 @@ print("wrote", output_path)
 print("reloaded columns:", list(loaded.voltage_traces.columns))
 print("reloaded shape:", loaded.voltage_traces.shape)
 print(
-    "(Arbor cell / synapses are not in the pickle; "
+    "(the cable graph is not in the pickle; "
     "integrate_voltages_by_tag needs the live instance.)"
 )

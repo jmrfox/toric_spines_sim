@@ -2,7 +2,7 @@
 
 **SWC.** File format for cable morphologies ([spec](https://swc-specification.readthedocs.io/en/latest/index.html)). Each row is `index tag x y z r parent`. A strict SWC describes an [arborescence](https://en.wikipedia.org/wiki/Arborescence_%28graph_theory%29) (acyclic rooted directed tree).
 
-**Cable model.** A 3D graph of neuronal (or subneuronal) morphology: vertices have XYZ and radius; edges are [frusta](https://en.wikipedia.org/wiki/Frustum). Not synonymous with SWC — a cable model need not be rooted, directed, or acyclic. This project writes cables as SWC **plus header directives** (`# CYCLE_BREAK`, `# MULTI_NECK`) so loops can be restored in Arbor as gap junctions.
+**Cable model.** A 3D graph of neuronal (or subneuronal) morphology: vertices have XYZ and radius; edges are [frusta](https://en.wikipedia.org/wiki/Frustum). Not synonymous with SWC — a cable model need not be rooted, directed, or acyclic. This project writes cables as SWC **plus header directives** (`# CYCLE_BREAK`, `# MULTI_NECK`) so loops can be restored at simulation time: `TSModel.build()` merges each pair back into one node of the cable graph, which both solvers (scipy reference, jaxley) integrate exactly.
 
 **Skeleton.** A 1D curve network in 3D, stored as **polylines** (`data/skeletons/TS{id}.polylines.txt`). Convertible to an undirected graph. Input to mascaf.
 

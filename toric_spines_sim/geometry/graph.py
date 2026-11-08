@@ -2,7 +2,7 @@
 Graph-analysis utilities for SWC morphologies.
 
 Provides geodesic distance computation, compartment classification relative
-to a source→target path, and probe-to-node mapping for bridging Arbor
+to a source→target path, and probe-to-node mapping for bridging
 simulation results back to the morphology graph.
 """
 

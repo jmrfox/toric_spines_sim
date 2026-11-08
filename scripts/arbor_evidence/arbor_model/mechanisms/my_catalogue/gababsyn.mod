@@ -1,4 +1,4 @@
-: GABAb synapse mechanism with dual-exponential decay
+: GABAb synapse: dual exponential, peak-normalized so gmax is the peak conductance (uS).
 
 NEURON {
     POINT_PROCESS gababsyn
@@ -22,6 +22,7 @@ PARAMETER {
 
 ASSIGNED {
     g (uS)
+    factor
 }
 
 STATE {
@@ -32,11 +33,15 @@ STATE {
 INITIAL {
     r = 0
     d = 0
+    : peak normalization so one unit-weight event peaks at gmax (as Exp2Syn)
+    LOCAL tp
+    tp = (tau_r*tau_d)/(tau_d - tau_r)*log(tau_d/tau_r)
+    factor = 1/(exp(-tp/tau_d) - exp(-tp/tau_r))
 }
 
 BREAKPOINT {
     SOLVE state_deriv METHOD cnexp
-    g = gmax * (d - r) / (tau_d - tau_r)
+    g = gmax * factor * (d - r)
     i = g * (v - e)
 }
 

@@ -30,8 +30,8 @@
 # `notebooks/tutorial/_artifacts/` only.
 #
 # Radius scaling at simulation time (`sink_radii_scale`, `neck_radius_scale`
-# on the parameter set) is applied by `TSModel.build_cell()` — see
-# `tsmodel_and_tsrecipe`.
+# on the parameter set) is applied by `TSModel.build()` — see
+# `tsmodel_and_solvers`.
 
 # %%
 from collections import Counter

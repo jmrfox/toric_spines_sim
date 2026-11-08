@@ -19,8 +19,8 @@
 # To mix receptor types, use more than one `SynapsePopulation` (different
 # `MODEL_REGISTRY` keys) and `merge` them. Axon maps live in the same
 # notebook. `synapses_basic` built one AMPA population from synpts file
-# order. Catalogue and cell construction are `mechanisms` and
-# `tsmodel_and_tsrecipe` — this notebook does not load the NMODL catalogue or
+# order. Synaptic kinetics and the model build are `mechanisms` and
+# `tsmodel_and_solvers` — this notebook does not build the model or
 # call `run()`.
 
 # %%
@@ -45,16 +45,15 @@ print(f"synpts: {n_synapses} rows ({synpts_path.name})")
 # ## How do I choose a synapse mechanism?
 #
 # `MODEL_REGISTRY` keys are the `model=` argument to
-# `SynapsePopulation.from_file`. Each key maps to an NMODL mechanism name
-# and the `ParameterSet` fields that fill it.
+# `SynapsePopulation.from_file`. Each key maps to the `ParameterSet` fields
+# that fill it (the `mechanism` column is the legacy NMODL name).
 #
-# `TSSimulator` always builds AMPA. For any other type (or a mix), build
+# `TSSimulator(..., synapse_model=...)` builds one type. For a mix, build
 # population(s) yourself and pass the merged dict into `TSModel`
-# (`tsmodel_and_tsrecipe`). NMODL sources and the compiled catalogue are
-# `mechanisms`.
+# (`tsmodel_and_solvers`). Kinetics of each type are in `mechanisms`.
 
 # %%
-print(f"{'key':8s}  {'NMODL':12s}  ParameterSet keys")
+print(f"{'key':8s}  {'legacy':12s}  ParameterSet keys")
 for key, spec in MODEL_REGISTRY.items():
     print(f"{key:8s}  {spec['mechanism']:12s}  {spec['global_keys']}")
 
@@ -67,7 +66,7 @@ print("NMDA syn_0 mechanism_params:", nmda_population.synapses["syn_0"].mechanis
 #
 # `SynapsePopulation.merge` concatenates label → `SynapsePoint` dicts.
 # Labels must be unique, so use a different `label_prefix` per population
-# (or build the dict by hand). Insertion order is the order `TSRecipe` uses
+# (or build the dict by hand). Insertion order is the order `TSModel` uses
 # when mapping a `TsGroup` by index.
 #
 # The example below places AMPA and NMDA at **every** synpts site (two
@@ -117,7 +116,7 @@ for label, syn in disjoint.items():
 #
 # - **pynapple `TsGroup`:** channel **index** `i` → `list(synapses.keys())[i]`.
 #   Channel labels (`A0S0`, `"A"`, even `syn_0`) are ignored.
-# - **`dict[str, list[float]]`:** keys must match Arbor place tags.
+# - **`dict[str, list[float]]`:** keys must match synapse labels.
 #
 # Generator channel order should match synpts row order, or be remapped
 # (below). Rate-curve details are `events_basic` and `events_advanced`.
@@ -134,7 +133,7 @@ print("custom prefix does not add semantics: still index 0, 1, 2, …")
 # `load_axon_events_from_file` converts those to **0-based** lists.
 #
 # Event generators fan out channels in **axon order** (all synapses of axon
-# 0, then axon 1, …). `TSRecipe` / `TSSimulator` still require **synpts
+# 0, then axon 1, …). `TSSimulator` still requires **synpts
 # order**. `remap_axon_channel_events_to_synapses` scatters axon-order
 # channels onto indices `0 .. N-1`. `events_advanced` runs that remap.
 

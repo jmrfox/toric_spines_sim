@@ -11,12 +11,7 @@ from toric_spines_sim.geometry.swc import (
 )
 from toric_spines_sim.utils import equal_vectors
 from toric_spines_sim.simulation.parameters import make_default_parameter_bank
-from toric_spines_sim import (
-    SynapsePoint,
-    SynapsePopulation,
-    GapJunctionPoint,
-    prepare_gap_junctions,
-)
+from toric_spines_sim import SynapsePoint, SynapsePopulation
 
 
 class TestParseCycleBreaks:
@@ -219,19 +214,43 @@ class TestIcxParameterBanks:
         )
 
         pset = make_icx_parameter_bank_invitro().sample()
-        assert pset["temp_K"] == 297.0
-        assert pset["pas_leak_g_S_per_cm2"] == 0.000144
-        assert pset["Vrest_mV"] == -67.6
+        assert pset["temp_K"] == 296.0
+        assert pset["cm_uF_per_cm2"] == 0.9
+        # g_pas = cm / (Rin * C) with Sanculi medians (290 MOhm, 205 pF)
+        assert pset["pas_leak_g_S_per_cm2"] == pytest.approx(1.514e-5, rel=1e-3)
+        assert pset["tau_m_ms"] == pytest.approx(290 * 205 * 1e-3, rel=1e-3)
+        assert pset["sink_lumped"] == 1
+        assert pset["Vrest_mV"] == -66.0
 
     def test_invivo_biophysics(self):
         from toric_spines_sim.simulation.parameters import (
             make_icx_parameter_bank_invivo,
         )
 
+        from toric_spines_sim.simulation.parameters import (
+            make_icx_parameter_bank_invitro,
+        )
+
         pset = make_icx_parameter_bank_invivo().sample()
+        vitro = make_icx_parameter_bank_invitro().sample()
         assert pset["temp_K"] == 313.0
-        assert pset["pas_leak_g_S_per_cm2"] == 0.00042
         assert pset["Vrest_mV"] == -67.6
+        assert pset["cm_uF_per_cm2"] == vitro["cm_uF_per_cm2"]
+        f = 1.7  # (313 - 296) / 10
+        assert pset["pas_leak_g_S_per_cm2"] == pytest.approx(vitro["pas_leak_g_S_per_cm2"] * 1.98**f)
+        assert pset["rL_ohm_cm"] == pytest.approx(100 * 0.8**f)
+        assert pset["ampa_tau_ms"] == pytest.approx(2.0 / 1.4**f)
+        assert pset["nmda_tau_d_ms"] == pytest.approx(50.0 / 2.0**f)
+
+    def test_invivo_background_lowers_cell_rin(self):
+        from toric_spines_sim.simulation.parameters import make_icx_parameter_bank
+
+        none = make_icx_parameter_bank("in_vivo").sample()
+        high = make_icx_parameter_bank("in_vivo", background="high").sample()
+        assert high["cell_Rin_MOhm"] == pytest.approx(0.2 * none["cell_Rin_MOhm"])
+        assert high["pas_leak_g_S_per_cm2"] == none["pas_leak_g_S_per_cm2"]
+        with pytest.raises(ValueError):
+            make_icx_parameter_bank("in_vitro", background="high")
 
 
 class TestSynapsePoint:
@@ -250,24 +269,6 @@ class TestSynapsePoint:
         assert syn.mechanism == "ampasyn"
         assert syn.synapse_params["gmax_uS"] == 0.002
         assert syn.mechanism_params["tau"] == 2.0
-
-
-class TestGapJunctionPoint:
-    """Test suite for GapJunctionPoint dataclass."""
-
-    def test_init_basic(self):
-        """Test basic initialization."""
-        gj = GapJunctionPoint(
-            index_pair=(1, 2), location=(3.0, 4.0, 5.0), weight=1.0
-        )
-        assert gj.index_pair == (1, 2)
-        assert gj.location == (3.0, 4.0, 5.0)
-        assert gj.weight == 1.0
-
-    def test_init_with_weight(self):
-        """Test initialization with custom weight."""
-        gj = GapJunctionPoint(index_pair=(1, 2), location=(3.0, 4.0, 5.0), weight=2.5)
-        assert gj.weight == 2.5
 
 
 class TestSynapsePopulation:
@@ -389,53 +390,8 @@ class TestSynapsePopulation:
         assert synapses["syn_0"].location == (1.5, 0.0, 0.0)
 
 
-class TestPrepareGapJunctions:
-    """Test suite for prepare_gap_junctions function."""
-
-    def test_prepare_basic(self, sample_swc_file):
-        """Test basic gap junction preparation."""
-        pset = make_default_parameter_bank().sample()
-        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
-        assert len(gap_junctions) == 1
-        assert "gj_0" in gap_junctions
-
-    def test_prepare_with_custom_weight(self, sample_swc_file):
-        """Test preparation with custom weight."""
-        parameter_bank = make_default_parameter_bank()
-        parameter_bank["gj_weight"].value = 2.0
-        pset = parameter_bank.sample()
-        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
-        assert gap_junctions["gj_0"].weight == 2.0
-
-    def test_prepare_with_parameters(self, sample_swc_file):
-        """Test preparation with sampled parameters."""
-        parameter_bank = make_default_parameter_bank()
-        parameter_bank["gj_weight"].value = 1.5
-        pset = parameter_bank.sample()
-        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
-        assert gap_junctions["gj_0"].weight == 1.5
-
-    def test_prepare_index_pairs(self, sample_swc_file):
-        """Test that index pairs are correct."""
-        pset = make_default_parameter_bank().sample()
-        gap_junctions = prepare_gap_junctions(sample_swc_file, parameters=pset)
-        assert gap_junctions["gj_0"].index_pair == (3, 4)
-
-    def test_prepare_no_cycle_breaks(self, temp_dir):
-        """Test with SWC file with no cycle breaks."""
-        swc_content = """# No cycle breaks
-1 1 0.0 0.0 0.0 1.0 -1
-2 1 1.0 0.0 0.0 0.8 1
-"""
-        swc_path = temp_dir / "no_breaks.swc"
-        swc_path.write_text(swc_content)
-        pset = make_default_parameter_bank().sample()
-        gap_junctions = prepare_gap_junctions(swc_path, parameters=pset)
-        assert len(gap_junctions) == 0
-
-
 class TestReconnectAndGapJunctionMapping:
-    """MULTI_NECK parsing and distinct Arbor locations for colocated samples."""
+    """MULTI_NECK / CYCLE_BREAK reconnect parsing."""
 
     def test_parse_multi_neck_and_cycle_together(self, temp_dir):
         from toric_spines_sim.geometry.swc import (
@@ -457,122 +413,61 @@ class TestReconnectAndGapJunctionMapping:
         assert (3, 4) in pairs
         assert (1, 4) in pairs
 
-    def test_prepare_gap_junctions_includes_multi_neck(self, temp_dir):
-        swc_content = """# CYCLE_BREAK reconnect 3 4
-# MULTI_NECK reconnect 1 4
-1 1 0.0 0.0 0.0 1.0 -1
-2 1 1.0 0.0 0.0 0.8 1
-3 1 2.0 0.0 0.0 0.6 2
-4 1 2.0 0.0 0.0 0.6 2
-"""
-        swc_path = temp_dir / "multi.swc"
-        swc_path.write_text(swc_content)
-        pset = make_default_parameter_bank().sample()
-        gap_junctions = prepare_gap_junctions(swc_path, parameters=pset)
-        assert len(gap_junctions) == 2
-        index_pairs = {gj.index_pair for gj in gap_junctions.values()}
-        assert (3, 4) in index_pairs
-        assert (1, 4) in index_pairs
-
-    def test_colocated_cycle_break_maps_to_distinct_locations(self, sample_swc_file):
-        import arbor as A
-        from toric_spines_sim.geometry.swc import arbor_locations_for_swc_nodes
-
-        loaded = A.load_swc_arbor(str(sample_swc_file))
-        segment_tree = loaded.segment_tree
-        morphology = A.morphology(segment_tree)
-        locs = arbor_locations_for_swc_nodes(
-            sample_swc_file, morphology, segment_tree, [3, 4]
-        )
-        a, b = locs[3], locs[4]
-        assert (a.branch, round(a.pos, 6)) != (b.branch, round(b.pos, 6))
-
     def test_kmatrix_event_generator_api(self):
         from toric_spines_sim.kmatrix import _events_for_rates
 
         pset = make_default_parameter_bank().sample()
-        events = _events_for_rates(
-            [0.0, 10.0],
-            pset,
-            "poisson",
-            ["syn_0", "syn_1"],
-        )
+        events = _events_for_rates([0.0, 10.0], pset, "poisson", ["syn_0", "syn_1"])
         assert len(events) == 2
 
-    def test_missing_catalogue_error_mentions_rebuild(self, monkeypatch, sample_swc_file, tmp_path):
-        from pathlib import Path
+
+class TestTSModelBuild:
+    """TSModel.build(): graph with loops closed, synapses, record nodes, HH spec."""
+
+    def _build(self, name="TS1", **over):
+        import logging
+
         from toric_spines_sim.model import TSModel
-        from toric_spines_sim.model import model as model_mod
+        from toric_spines_sim.paths import get_pointset_path, get_swc_path
+        from toric_spines_sim.simulation import make_icx_parameter_bank
 
-        monkeypatch.setattr(
-            model_mod, "CUSTOM_CATALOGUE_PATH", tmp_path / "missing-catalogue.so"
-        )
-        pset = make_default_parameter_bank().sample()
-        tsm = TSModel(
-            swc_path=sample_swc_file,
-            synapses={},
-            gap_junctions={},
-            record_points={},
-            parameters=pset,
-        )
-        with pytest.raises(FileNotFoundError, match="make_custom_catalogue"):
-            tsm.build_cell()
+        bank = make_icx_parameter_bank("in_vitro")
+        bank["discretization_um"].value = 0.5
+        for k, v in over.items():
+            if k != "hh_tags":
+                bank[k].value = v
+        p = bank.sample()
+        p["hh_tags"] = list(over.get("hh_tags", []))
+        swc = get_swc_path(f"{name}_wsink_r10um.swc", units="microns")
+        syn = SynapsePopulation.from_file(
+            get_pointset_path(f"{name}_synpts.txt", units="microns"), model="nmda", global_parameters=p
+        ).synapses
+        logging.disable(logging.WARNING)
+        built = TSModel(swc, syn, {"a": tuple(next(iter(syn.values())).location)}, p).build()
+        logging.disable(logging.NOTSET)
+        return built, syn, p
 
+    def test_loops_closed_and_synapses_in_label_order(self):
+        built, syn, _ = self._build("TS1")
+        assert built.graph.n_loops == 7  # MASCAF's TS1 cycle count
+        assert len(built.reconnects) == 7
+        assert built.synapse_labels == list(syn)
+        assert len(built.graph.synapses) == len(syn)
+        (_node, comps), = built.graph.synapses[:1]
+        assert comps[0].kind == "exp2" and comps[0].mg_mM is not None
 
-class TestCheckCatalogue:
-    """Tests for check_catalogue."""
+    def test_lumped_sink_totals(self):
+        built, _, p = self._build("TS76")
+        sink_um2 = sum(built.graph.area_by_tag.get(t, 0).sum() for t in (5, 6))
+        cm_sink = built.membrane_overrides[5]["cm"]
+        c_sink_pF = sink_um2 * 1e-8 * cm_sink * 1e6
+        assert c_sink_pF == pytest.approx(p["cell_C_pF"], rel=1e-9)
+        g_sink_nS = sink_um2 * 1e-8 * built.membrane_overrides[5]["g_pas"] * 1e9
+        assert 1e3 / g_sink_nS == pytest.approx(p["cell_Rin_MOhm"], rel=1e-9)
 
-    def test_required_mechanisms_match_mod_stems(self):
-        from toric_spines_sim.model.model import required_catalogue_mechanisms
-
-        names = required_catalogue_mechanisms()
-        assert names == [
-            "ampasyn",
-            "effexcsyn",
-            "gabaasyn",
-            "gababsyn",
-            "hhnotemp",
-            "nmdasyn",
-        ]
-
-    def test_missing_file(self, tmp_path):
-        from toric_spines_sim.model import check_catalogue
-
-        missing = tmp_path / "missing-catalogue.so"
-        with pytest.raises(FileNotFoundError, match="make_custom_catalogue"):
-            check_catalogue(path=missing)
-
-    def test_load_failure(self, monkeypatch, tmp_path):
-        from toric_spines_sim.model import check_catalogue
-        from toric_spines_sim.model import model as model_mod
-
-        fake_so = tmp_path / "broken-catalogue.so"
-        fake_so.write_bytes(b"not a shared library")
-
-        def boom(_path):
-            raise OSError("incompatible catalogue")
-
-        monkeypatch.setattr(model_mod.A, "load_catalogue", boom)
-        with pytest.raises(RuntimeError, match="Could not load NMODL catalogue"):
-            check_catalogue(path=fake_so)
-
-    def test_missing_mechanism(self, monkeypatch, tmp_path):
-        from toric_spines_sim.model import check_catalogue
-        from toric_spines_sim.model import model as model_mod
-
-        fake_so = tmp_path / "incomplete-catalogue.so"
-        fake_so.write_bytes(b"placeholder")
-
-        class EmptyCatalogue:
-            def __contains__(self, name):
-                return False
-
-            def __getitem__(self, name):
-                raise KeyError(name)
-
-        monkeypatch.setattr(
-            model_mod.A, "load_catalogue", lambda _path: EmptyCatalogue()
-        )
-        with pytest.raises(RuntimeError, match="missing mechanisms"):
-            check_catalogue(path=fake_so)
-
+    def test_hh_spec(self):
+        built, _, p = self._build("TS76", hh_tags=[5], hh_scale=0.5, sink_lumped=0)
+        assert built.hh.tags == (5,)
+        assert built.hh.gna == pytest.approx(0.5 * p["Na_gbar_S_per_cm2"])
+        built, _, _ = self._build("TS76")
+        assert built.hh is None

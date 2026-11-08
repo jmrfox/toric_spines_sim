@@ -69,7 +69,7 @@ plotter.show()
 #
 # Format: one line per stream, `LABEL t1 t2 …` with times in ms. Empty
 # streams are a label alone. **Line order is the TsGroup index.** Labels are
-# stored as metadata but `TSRecipe` / `TSSimulator` ignore them.
+# stored as metadata but `TSSimulator` ignores them.
 #
 # `data/events/demo_periodic.txt` is three streams labeled `A`, `B`, `C`.
 # Those names do **not** select synapses; stream 0 still maps to `syn_0`.

@@ -1,0 +1,515 @@
+<title>Arbor Loop Closure</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a lab notebook page. One wide figure row (three rings), then two
+   evidence figures, then the two-compartment mechanism. Quiet chrome; the
+   voltage colormap is the only saturated color besides the two series hues. */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --fg: #18202b;
+  --muted: #5a6573;
+  --rule: #d8dde4;
+  --truth: #1f5fbf;     /* loop closed correctly */
+  --gj: #c4501a;        /* Arbor gap junction */
+  --cut: #6b7280;       /* loop cut */
+  --ring-off: #e3e7ec;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --surface: #181d25; --fg: #e5e9ef; --muted: #98a2af; --rule: #2b323d;
+    --truth: #79a6ff; --gj: #f28a52; --cut: #9aa3ae; --ring-off: #262d37; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #181d25; --fg: #e5e9ef; --muted: #98a2af; --rule: #2b323d;
+  --truth: #79a6ff; --gj: #f28a52; --cut: #9aa3ae; --ring-off: #262d37; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+main { max-width: 1080px; margin: 0 auto; display: grid; gap: 40px; }
+header { display: grid; gap: 10px; max-width: 70ch; }
+h1 { font-family: var(--font-display); font-weight: 650; font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 650; font-size: 1.35rem; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); font-size: 1.05rem; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+section { display: grid; gap: 16px; }
+.figure { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; display: grid; gap: 16px; min-width: 0; }
+.rings { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; }
+.panel { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.panel-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; transform: translateY(1px); }
+.panel h3 { font-size: 0.98rem; font-weight: 600; margin: 0; }
+.panel canvas { width: 100%; max-width: 100%; aspect-ratio: 1 / 1.08; display: block; }
+.readout { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; display: grid; gap: 2px; }
+.readout b { color: var(--fg); font-weight: 500; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+.controls label { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+button, select {
+  font: inherit; font-size: 0.88rem; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+button:hover, select:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--truth); outline-offset: 2px; }
+#scrub { flex: 1 1 220px; min-width: 0; accent-color: var(--truth); }
+.time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.9rem; min-width: 11ch; }
+.colorbar { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.colorbar canvas { width: 100%; height: 10px; border-radius: 3px; display: block; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.chart .grid { stroke: var(--rule); stroke-width: 1; }
+.chart .axis { stroke: var(--muted); stroke-width: 1; }
+.note { font-size: 0.85rem; color: var(--muted); }
+.callout { border-left: 3px solid var(--gj); padding: 4px 0 4px 14px; display: grid; gap: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.toy { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.toy canvas { width: 100%; max-width: 100%; aspect-ratio: 2.1 / 1; display: block; }
+.toy-table { font-family: var(--font-mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+code { font-family: var(--font-mono); font-size: 0.88em; }
+.stats { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 0.86rem; font-variant-numeric: tabular-nums; min-width: 480px; }
+th, td { text-align: right; padding: 6px 12px; border-bottom: 1px solid var(--rule); }
+th:first-child, td:first-child { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; }
+tr.hl td { color: var(--gj); font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">toric_spines_sim · Arbor 0.12.2 · real simulation output</div>
+    <h1>Why an Arbor gap junction can't close a loop</h1>
+    <p class="lede">A ring of spine cable is cut at the top, the way MASCAF breaks a cycle for SWC export, and joined again three ways. One synapse fires just beside the cut. All three runs use the same morphology, membrane and input.</p>
+  </header>
+
+  <section aria-labelledby="h-rings">
+    <h2 id="h-rings">The same synapse, three ways of handling the cut</h2>
+    <div class="figure">
+      <div class="controls">
+        <button id="play" type="button" aria-pressed="false">Play</button>
+        <input id="scrub" type="range" min="0" max="1" step="1" value="0" aria-label="Time">
+        <span class="time" id="time">t = 0.000 ms</span>
+        <label for="speed">Speed
+          <select id="speed">
+            <option value="0.25">¼×</option>
+            <option value="0.5" selected>½×</option>
+            <option value="1">1×</option>
+          </select>
+        </label>
+        <label for="weight">Junction weight
+          <select id="weight"></select>
+        </label>
+      </div>
+      <div class="rings">
+        <div class="panel">
+          <div class="panel-head"><span class="swatch" style="background: var(--truth)"></span><h3>Loop closed (reference solver)</h3></div>
+          <canvas id="c-true" aria-label="Ring voltage, loop closed"></canvas>
+          <div class="readout" id="r-true"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="swatch" style="background: var(--gj)"></span><h3 id="gj-title">Arbor gap junction</h3></div>
+          <canvas id="c-gj" aria-label="Ring voltage, Arbor gap junction"></canvas>
+          <div class="readout" id="r-gj"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="swatch" style="background: var(--cut)"></span><h3>Loop cut (no junction)</h3></div>
+          <canvas id="c-cut" aria-label="Ring voltage, loop cut"></canvas>
+          <div class="readout" id="r-cut"></div>
+        </div>
+      </div>
+      <div class="colorbar"><span>0 mV</span><canvas id="cbar" aria-hidden="true"></canvas><span id="cbar-max">12 mV</span></div>
+      <p class="note">Color is depolarization from rest. The ring is 2 µm in radius (0.25 µm cable), with a 1.5 µm neck into a sink carrying the whole cell's 205 pF and 290 MΩ (Sanculi medians). The white tick at the top is the cut; the dot is the synapse (4 nS AMPA at t = 1 ms).</p>
+    </div>
+    <div class="callout">
+      <p><b>What to look for.</b> With the loop closed, charge flows both ways around the ring, so the left side of the cut lights up as fast as the right. With the loop cut, the left side has to wait for charge to travel the long way round. At the default weight (1 µS) the junction looks seamless, with no visible step at the cut, but the whole spine responds at less than half the correct amplitude.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tradeoff">
+    <h2 id="h-tradeoff">No junction weight gets both things right</h2>
+    <div class="figure">
+      <div class="two">
+        <div class="panel">
+          <h3>Peak depolarization anywhere on the ring</h3>
+          <svg class="chart" id="chart-peak" viewBox="0 0 420 260" role="img" aria-label="Ring peak versus junction weight"></svg>
+        </div>
+        <div class="panel">
+          <h3>Largest voltage step across the cut</h3>
+          <svg class="chart" id="chart-jump" viewBox="0 0 420 260" role="img" aria-label="Voltage step across the cut versus junction weight"></svg>
+        </div>
+      </div>
+      <div class="legend">
+        <span><span class="swatch" style="background: var(--truth)"></span>Loop closed (correct)</span>
+        <span><span class="swatch" style="background: var(--gj)"></span>Arbor gap junction</span>
+        <span><span class="swatch" style="background: var(--cut)"></span>Loop cut</span>
+      </div>
+      <p class="note">A weak junction acts like a thin resistor: the cut stays visible as a step. A strong junction removes the step but drains the response. Arbor's own example uses 0.015 µS; this repo used 1 µS.</p>
+      <div class="callout">
+        <p><b>Why strong junctions drain the response.</b> Arbor computes the junction current from the peer's voltage at the start of the step and the local voltage at the end. Added over both ends, that current opposes any change in the pair's voltage, exactly like a capacitor of size <code>g·dt</code> on each side. At 1 µS and dt = 0.025 ms that is 50 pF placed inside a ring whose real membrane is about 0.2 pF; at 10 µS it is 500 pF, more than twice the whole neuron.</p>
+        <p>Checked directly: the correctly closed loop with an extra <code>2·g·dt</code> capacitor at the cut reproduces Arbor's ring peak to within 0.02 mV at 1 and 10 µS, at both dt = 0.025 and 0.0125 ms. Halving dt halves the fake capacitance, so the result also depends on the time step, which a physical connection never does.</p>
+      </div>
+      <div class="stats"><table id="stats-table"></table></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-hidden">
+    <h2 id="h-hidden">Why it never showed up in the animations</h2>
+    <div class="figure">
+      <div class="controls">
+        <label><input type="checkbox" id="show-every" checked> Every simulation step (0.025 ms)</label>
+        <label><input type="checkbox" id="show-sampled" checked> Every 0.25 ms (<code>DT_RECORD_MS</code> in <code>axons_animation.py</code>)</label>
+      </div>
+      <svg class="chart" id="chart-diff" viewBox="0 0 860 300" role="img" aria-label="Voltage difference across the cut over time"></svg>
+      <p class="note" id="diff-note"></p>
+    </div>
+    <div class="callout">
+      <p><b>Two reasons it stays hidden.</b> First, the visible error is a wrong amplitude, not a glitch: a smooth, plausible attenuation looks like physics. Second, the voltage across the junction zigzags up and down on alternate simulation steps, and recording every 0.25 ms (an even number of steps) lands on the same phase each time, so the zigzag disappears from the recording entirely.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-toy">
+    <h2 id="h-toy">The mechanism, with two compartments</h2>
+    <p>Compartment A starts at 10 mV and B at 0 mV, joined by a strong conductance (<code>k = g·dt/C = 100</code>, a cable joint is ~10⁴). In the cable, Arbor solves both new voltages together. A gap junction instead uses the other side's voltage from the start of the step.</p>
+    <div class="figure">
+      <div class="controls">
+        <button id="toy-step" type="button">Step</button>
+        <button id="toy-reset" type="button">Reset</button>
+        <span class="time" id="toy-n">step 0</span>
+      </div>
+      <div class="toy">
+        <div class="panel">
+          <div class="panel-head"><span class="swatch" style="background: var(--truth)"></span><h3>Solved together (cable)</h3></div>
+          <canvas id="toy-joint" aria-label="Two compartments solved together"></canvas>
+          <div class="toy-table" id="toy-joint-v"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="swatch" style="background: var(--gj)"></span><h3>Peer voltage from last step (Arbor junction)</h3></div>
+          <canvas id="toy-gj" aria-label="Two compartments, Arbor junction"></canvas>
+          <div class="toy-table" id="toy-gj-v"></div>
+        </div>
+      </div>
+      <p class="note">Each side jumps to where the other side <em>was</em>, so they swap places every step. Charge crosses one way, then straight back, and the net transfer shrinks as the conductance grows.</p>
+    </div>
+  </section>
+</main>
+
+<script type="application/json" id="ring-data">__RING_DATA__</script>
+<script>
+(function () {
+  "use strict";
+  const D = JSON.parse(document.getElementById("ring-data").textContent);
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const T = D.t_ms, N = T.length, K = D.n_ring;
+  const runs = D.runs;
+  const weights = D.weights_uS;
+  const fmtW = (w) => (w < 0.01 ? w.toString() : String(+w.toPrecision(3)));
+
+  // ---------- colormap (viridis stops) ----------
+  const STOPS = [[68,1,84],[72,40,120],[62,74,137],[49,104,142],[38,130,142],[31,158,137],[53,183,121],[110,206,88],[181,222,43],[253,231,37]];
+  function cmap(x) {
+    x = Math.max(0, Math.min(1, x));
+    const p = x * (STOPS.length - 1), i = Math.min(STOPS.length - 2, Math.floor(p)), f = p - i;
+    const a = STOPS[i], b = STOPS[i + 1];
+    return `rgb(${Math.round(a[0] + (b[0] - a[0]) * f)},${Math.round(a[1] + (b[1] - a[1]) * f)},${Math.round(a[2] + (b[2] - a[2]) * f)})`;
+  }
+  let vmax = 0;
+  for (const r of Object.values(runs)) for (const row of r.ring) for (const v of row) if (v > vmax) vmax = v;
+  vmax = Math.ceil(vmax);
+  document.getElementById("cbar-max").textContent = vmax + " mV";
+  (function drawBar() {
+    const c = document.getElementById("cbar"), w = 300; c.width = w; c.height = 10;
+    const g = c.getContext("2d");
+    for (let i = 0; i < w; i++) { g.fillStyle = cmap(i / (w - 1)); g.fillRect(i, 0, 1, 10); }
+  })();
+
+  // ---------- weight selector ----------
+  const wsel = document.getElementById("weight");
+  weights.forEach((w) => {
+    const o = document.createElement("option");
+    o.value = String(w);
+    o.textContent = fmtW(w) + " µS" + (w === 1 ? " (repo default)" : w === 0.015 ? " (Arbor example)" : "");
+    if (w === 1) o.selected = true;
+    wsel.appendChild(o);
+  });
+  const gjKey = () => "gj_" + fmtW(+wsel.value);
+
+  // ---------- ring drawing ----------
+  function sizeCanvas(c) {
+    const r = c.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    const w = Math.max(10, Math.round(r.width * dpr)), h = Math.max(10, Math.round(r.height * dpr));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return { w, h, dpr };
+  }
+  function drawRing(canvas, run, ti) {
+    const { w, h } = sizeCanvas(canvas);
+    const g = canvas.getContext("2d");
+    g.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h * 0.36, R = Math.min(w, h) * 0.27, lw = R * 0.22;
+    const span = (2 * Math.PI) / K;
+    for (let k = 0; k < K; k++) {
+      const deg = D.ring_angles_deg[k];
+      const a = (-deg * Math.PI) / 180; // canvas y is down
+      g.beginPath();
+      g.strokeStyle = cmap(run.ring[k][ti] / vmax);
+      g.lineWidth = lw;
+      g.arc(cx, cy, R, a - span / 2 - 0.004, a + span / 2 + 0.004);
+      g.stroke();
+    }
+    // neck and sink
+    const neckTop = cy + R + lw / 2, neckLen = R * 0.55;
+    g.strokeStyle = cmap(run.neck[ti] / vmax);
+    g.lineWidth = lw * 0.45;
+    g.beginPath(); g.moveTo(cx, neckTop - 2); g.lineTo(cx, neckTop + neckLen); g.stroke();
+    g.fillStyle = cmap(run.sink[ti] / vmax);
+    const sw = R * 1.5, sh = R * 0.55;
+    g.beginPath();
+    g.roundRect ? g.roundRect(cx - sw / 2, neckTop + neckLen, sw, sh, 6) : g.rect(cx - sw / 2, neckTop + neckLen, sw, sh);
+    g.fill();
+    // cut tick
+    const ca = (-D.cut_deg * Math.PI) / 180;
+    g.strokeStyle = css("--surface"); g.lineWidth = Math.max(2, lw * 0.16);
+    g.beginPath();
+    g.moveTo(cx + (R - lw * 0.75) * Math.cos(ca), cy + (R - lw * 0.75) * Math.sin(ca));
+    g.lineTo(cx + (R + lw * 0.75) * Math.cos(ca), cy + (R + lw * 0.75) * Math.sin(ca));
+    g.stroke();
+    // synapse
+    const sa = (-D.syn_deg * Math.PI) / 180;
+    g.fillStyle = css("--fg");
+    g.beginPath(); g.arc(cx + (R + lw * 0.95) * Math.cos(sa), cy + (R + lw * 0.95) * Math.sin(sa), Math.max(3, lw * 0.22), 0, 2 * Math.PI); g.fill();
+    // labels
+    g.fillStyle = css("--muted");
+    g.font = `${Math.round(11 * (window.devicePixelRatio || 1))}px ${css("--font-mono")}`;
+    g.textAlign = "center";
+    g.fillText("cut", cx, cy - R - lw * 0.9);
+    g.fillText("sink", cx, neckTop + neckLen + sh + 14 * (window.devicePixelRatio || 1));
+  }
+  function readout(el, run, ti) {
+    let peak = 0; for (const row of run.ring) for (const v of row) if (v > peak) peak = v;
+    el.innerHTML =
+      `<span>synapse side of cut <b>${run.cut_cw[ti].toFixed(2)}</b> mV</span>` +
+      `<span>far side of cut&nbsp;&nbsp;&nbsp;&nbsp; <b>${run.cut_ccw[ti].toFixed(2)}</b> mV</span>` +
+      `<span>ring peak (whole run) <b>${peak.toFixed(2)}</b> mV</span>`;
+  }
+
+  // ---------- animation state ----------
+  const scrub = document.getElementById("scrub");
+  scrub.max = String(N - 1);
+  const tStart = T.findIndex((t) => t >= 0.5);
+  const tEnd = T.findIndex((t) => t >= 6.0);
+  // open on the true run's peak so the still frame shows the effect
+  let peakIdx = 0, best = -1;
+  runs.true.cut_ccw.forEach((v, i) => { if (v > best) { best = v; peakIdx = i; } });
+  let ti = peakIdx;
+  scrub.value = String(ti);
+  const playBtn = document.getElementById("play");
+  let playing = false, last = 0, acc = 0;
+
+  function render() {
+    document.getElementById("time").textContent = `t = ${T[ti].toFixed(3)} ms`;
+    document.getElementById("gj-title").textContent = `Arbor gap junction, ${fmtW(+wsel.value)} µS`;
+    drawRing(document.getElementById("c-true"), runs.true, ti);
+    drawRing(document.getElementById("c-gj"), runs[gjKey()], ti);
+    drawRing(document.getElementById("c-cut"), runs.cut, ti);
+    readout(document.getElementById("r-true"), runs.true, ti);
+    readout(document.getElementById("r-gj"), runs[gjKey()], ti);
+    readout(document.getElementById("r-cut"), runs.cut, ti);
+  }
+  function frame(now) {
+    if (!playing) return;
+    const dt = last ? (now - last) / 1000 : 0; last = now;
+    // simulated ms per real second at 1x
+    acc += dt * 1.0 * (+document.getElementById("speed").value) / D.dt_ms;
+    const steps = Math.floor(acc);
+    if (steps > 0) {
+      acc -= steps;
+      ti += steps;
+      if (ti > tEnd) ti = tStart;
+      scrub.value = String(ti);
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+  function setPlaying(p) {
+    playing = p; last = 0; acc = 0;
+    playBtn.textContent = p ? "Pause" : "Play";
+    playBtn.setAttribute("aria-pressed", String(p));
+    if (p) { if (ti >= tEnd) ti = tStart; requestAnimationFrame(frame); }
+  }
+  playBtn.addEventListener("click", () => setPlaying(!playing));
+  scrub.addEventListener("input", () => { ti = +scrub.value; render(); });
+  wsel.addEventListener("change", () => { render(); drawDiff(); drawTradeoff(); });
+  window.addEventListener("resize", () => render());
+
+  // ---------- small SVG chart helper ----------
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => span / s <= n) || mag * 10;
+    const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // ---------- trade-off charts ----------
+  function ringPeak(run) { let p = 0; for (const row of run.ring) for (const v of row) if (v > p) p = v; return p; }
+  function maxJump(run) { let m = 0; for (let i = 0; i < N; i++) m = Math.max(m, Math.abs(run.cut_cw[i] - run.cut_ccw[i])); return m; }
+  function drawTradeoff() {
+    const sel = +wsel.value;
+    const series = weights.map((w) => ({ w, run: runs["gj_" + fmtW(w)] }));
+    [["chart-peak", ringPeak, "mV"], ["chart-jump", maxJump, "mV"]].forEach(([id, f, unit]) => {
+      const svg = document.getElementById(id); svg.innerHTML = "";
+      const W = 420, H = 260, m = { l: 46, r: 14, t: 14, b: 40 };
+      const vals = series.map((s) => f(s.run)).concat([f(runs.true), f(runs.cut)]);
+      const ymax = Math.max(...vals) * 1.12;
+      const lx = (w) => m.l + ((Math.log10(w) + 3.3) / (1 + 3.3 + 0.3)) * (W - m.l - m.r);
+      const ly = (v) => H - m.b - (v / ymax) * (H - m.t - m.b);
+      niceTicks(0, ymax, 5).forEach((v) => {
+        el("line", { x1: m.l, x2: W - m.r, y1: ly(v), y2: ly(v), class: "grid" }, svg);
+        el("text", { x: m.l - 6, y: ly(v) + 4, "text-anchor": "end" }, svg).textContent = v;
+      });
+      weights.forEach((w) => { el("text", { x: lx(w), y: H - m.b + 16, "text-anchor": "middle" }, svg).textContent = fmtW(w); });
+      el("text", { x: (m.l + W - m.r) / 2, y: H - 6, "text-anchor": "middle" }, svg).textContent = "junction weight (µS, log scale)";
+      el("text", { x: 12, y: m.t + 2, "text-anchor": "start" }, svg).textContent = unit;
+      el("line", { x1: m.l, x2: m.l, y1: m.t, y2: H - m.b, class: "axis" }, svg);
+      const ref = (v, color, dash, label) => {
+        el("line", { x1: m.l, x2: W - m.r, y1: ly(v), y2: ly(v), stroke: color, "stroke-width": 2, "stroke-dasharray": dash }, svg);
+        const t = el("text", { x: W - m.r, y: ly(v) - 5, "text-anchor": "end" }, svg); t.textContent = label; t.style.fill = color;
+      };
+      ref(f(runs.true), css("--truth"), "0", `loop closed ${f(runs.true).toFixed(1)}`);
+      ref(f(runs.cut), css("--cut"), "5 4", `cut ${f(runs.cut).toFixed(1)}`);
+      el("polyline", { points: series.map((s) => `${lx(s.w)},${ly(f(s.run))}`).join(" "), fill: "none", stroke: css("--gj"), "stroke-width": 2 }, svg);
+      series.forEach((s) => {
+        el("circle", { cx: lx(s.w), cy: ly(f(s.run)), r: s.w === sel ? 6 : 4, fill: s.w === sel ? css("--gj") : css("--surface"), stroke: css("--gj"), "stroke-width": 2 }, svg);
+      });
+    });
+    const tbl = document.getElementById("stats-table");
+    const tp = ringPeak(runs.true);
+    let html = "<thead><tr><th>Run</th><th>Ring peak (mV)</th><th>vs loop closed</th><th>Step across cut (mV)</th></tr></thead><tbody>";
+    const row = (name, run, cls) => {
+      const p = ringPeak(run);
+      html += `<tr class="${cls || ""}"><td>${name}</td><td>${p.toFixed(2)}</td><td>${name.startsWith("Loop closed") ? "—" : ((p / tp - 1) * 100 >= 0 ? "+" : "") + ((p / tp - 1) * 100).toFixed(0) + "%"}</td><td>${maxJump(run).toFixed(2)}</td></tr>`;
+    };
+    row("Loop closed (reference)", runs.true);
+    weights.forEach((w) => row(`Arbor junction, ${fmtW(w)} µS`, runs["gj_" + fmtW(w)], w === sel ? "hl" : ""));
+    row("Loop cut", runs.cut);
+    tbl.innerHTML = html + "</tbody>";
+  }
+
+  // ---------- hidden flicker chart ----------
+  function drawDiff() {
+    const svg = document.getElementById("chart-diff"); svg.innerHTML = "";
+    const W = 860, H = 300, m = { l: 56, r: 16, t: 16, b: 40 };
+    const t0 = 0.9, t1 = 4.0;
+    const i0 = T.findIndex((t) => t >= t0), i1 = T.findIndex((t) => t >= t1);
+    const run = runs[gjKey()];
+    const diff = (r, i) => r.cut_cw[i] - r.cut_ccw[i];
+    let lo = 0, hi = 0;
+    for (let i = i0; i <= i1; i++) { const v = diff(run, i); lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    const pad = (hi - lo) * 0.15 || 0.05; lo -= pad; hi += pad;
+    const x = (t) => m.l + ((t - t0) / (t1 - t0)) * (W - m.l - m.r);
+    const y = (v) => m.t + ((hi - v) / (hi - lo)) * (H - m.t - m.b);
+    niceTicks(lo, hi, 5).forEach((v) => {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "grid" }, svg);
+      el("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = v;
+    });
+    niceTicks(t0, t1, 7).forEach((t) => { el("text", { x: x(t), y: H - m.b + 16, "text-anchor": "middle" }, svg).textContent = t; });
+    el("text", { x: (m.l + W - m.r) / 2, y: H - 6, "text-anchor": "middle" }, svg).textContent = "time (ms)";
+    el("text", { x: 8, y: m.t + 2, "text-anchor": "start" }, svg).textContent = "mV";
+    el("line", { x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), class: "axis" }, svg);
+    const tr = runs.true;
+    el("polyline", { points: Array.from({ length: i1 - i0 + 1 }, (_, k) => `${x(T[i0 + k])},${y(diff(tr, i0 + k))}`).join(" "), fill: "none", stroke: css("--truth"), "stroke-width": 2 }, svg);
+    let flipsEvery = 0, flipsSampled = 0;
+    if (document.getElementById("show-every").checked) {
+      el("polyline", { points: Array.from({ length: i1 - i0 + 1 }, (_, k) => `${x(T[i0 + k])},${y(diff(run, i0 + k))}`).join(" "), fill: "none", stroke: css("--gj"), "stroke-width": 1, "stroke-opacity": 0.85 }, svg);
+    }
+    const stride = Math.round(0.25 / D.dt_ms);
+    const sampled = []; for (let i = 0; i < N; i += stride) if (i >= i0 && i <= i1) sampled.push(i);
+    if (document.getElementById("show-sampled").checked) {
+      el("polyline", { points: sampled.map((i) => `${x(T[i])},${y(diff(run, i))}`).join(" "), fill: "none", stroke: css("--fg"), "stroke-width": 2.5 }, svg);
+      sampled.forEach((i) => el("circle", { cx: x(T[i]), cy: y(diff(run, i)), r: 3.5, fill: css("--fg") }, svg));
+    }
+    for (let i = i0 + 1; i < i1; i++) if (Math.sign(diff(run, i) - diff(run, i - 1)) !== Math.sign(diff(run, i + 1) - diff(run, i))) flipsEvery++;
+    for (let k = 1; k < sampled.length - 1; k++) {
+      const a = diff(run, sampled[k - 1]), b = diff(run, sampled[k]), c = diff(run, sampled[k + 1]);
+      if (Math.sign(b - a) !== Math.sign(c - b)) flipsSampled++;
+    }
+    const lx = W - m.r - 8;
+    [["loop closed (always 0)", css("--truth")], ["junction, every step", css("--gj")], ["junction, every 0.25 ms", css("--fg")]].forEach(([label, color], k) => {
+      const ty = m.t + 14 + k * 16;
+      el("line", { x1: lx - 190, x2: lx - 170, y1: ty - 4, y2: ty - 4, stroke: color, "stroke-width": 2.5 }, svg);
+      el("text", { x: lx - 164, y: ty, "text-anchor": "start" }, svg).textContent = label;
+    });
+    document.getElementById("diff-note").textContent =
+      `Voltage step across the cut (synapse side minus far side), ${fmtW(+wsel.value)} µS junction, ${t0}–${t1} ms. ` +
+      `At every step the trace reverses direction ${flipsEvery} times; sampled every 0.25 ms it reverses ${flipsSampled} times.`;
+  }
+  document.getElementById("show-every").addEventListener("change", drawDiff);
+  document.getElementById("show-sampled").addEventListener("change", drawDiff);
+
+  // ---------- two-compartment toy ----------
+  const K_TOY = 100;
+  let toy = { n: 0, joint: [10, 0], gj: [10, 0] };
+  function toyStep() {
+    const [a, b] = toy.joint, [p, q] = toy.gj, k = K_TOY;
+    // joint implicit: difference shrinks by 1/(1+2k), mean conserved
+    const mean = (a + b) / 2, d = (a - b) / (1 + 2 * k);
+    toy.joint = [mean + d / 2, mean - d / 2];
+    // explicit peer: each uses the other's old value
+    toy.gj = [(p + k * q) / (1 + k), (q + k * p) / (1 + k)];
+    toy.n++;
+  }
+  function drawToy(canvas, vals, color) {
+    const { w, h, dpr } = sizeCanvas(canvas);
+    const g = canvas.getContext("2d"); g.clearRect(0, 0, w, h);
+    const base = h - 26 * dpr, top = 14 * dpr, bw = w * 0.22;
+    ["A", "B"].forEach((name, i) => {
+      const x = w * (i === 0 ? 0.25 : 0.75) - bw / 2;
+      g.fillStyle = css("--ring-off"); g.fillRect(x, top, bw, base - top);
+      const hgt = (vals[i] / 10) * (base - top);
+      g.fillStyle = color; g.fillRect(x, base - hgt, bw, hgt);
+      g.fillStyle = css("--fg"); g.font = `${Math.round(12 * dpr)}px ${css("--font-mono")}`; g.textAlign = "center";
+      g.fillText(`${name}  ${vals[i].toFixed(2)} mV`, x + bw / 2, h - 8 * dpr);
+    });
+  }
+  function renderToy() {
+    document.getElementById("toy-n").textContent = `step ${toy.n}`;
+    drawToy(document.getElementById("toy-joint"), toy.joint, css("--truth"));
+    drawToy(document.getElementById("toy-gj"), toy.gj, css("--gj"));
+    document.getElementById("toy-joint-v").textContent = toy.n === 0 ? "A and B solved as one system" : `difference ${Math.abs(toy.joint[0] - toy.joint[1]).toFixed(3)} mV`;
+    document.getElementById("toy-gj-v").textContent = toy.n === 0 ? "each side sees the other's old voltage" : `difference ${Math.abs(toy.gj[0] - toy.gj[1]).toFixed(3)} mV, ${toy.gj[0] > toy.gj[1] ? "A above B" : "B above A"}`;
+  }
+  document.getElementById("toy-step").addEventListener("click", () => { toyStep(); renderToy(); });
+  document.getElementById("toy-reset").addEventListener("click", () => { toy = { n: 0, joint: [10, 0], gj: [10, 0] }; renderToy(); });
+  window.addEventListener("resize", renderToy);
+
+  // ---------- theme changes redraw ----------
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const redrawAll = () => { render(); drawTradeoff(); drawDiff(); renderToy(); };
+  if (mq.addEventListener) mq.addEventListener("change", redrawAll);
+  new MutationObserver(redrawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  redrawAll();
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce) setTimeout(() => { if (!playing) setPlaying(true); }, 1800);
+})();
+</script>

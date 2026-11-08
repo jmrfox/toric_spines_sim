@@ -58,14 +58,8 @@ class TestSimulationResults:
             "voltage_traces": mock_voltage_traces,
             "input_events": mock_input_events,
             "synapses": {},
-            "gap_junctions": [],
             "record_points": mock_record_points,
-            "cell": None,
-            "morphology": None,
             "segment_tree": MockSegmentTree(),
-            "decor": None,
-            "labels": None,
-            "cvp": None,
         }
 
     def test_init(self, mock_results_dict):
@@ -286,16 +280,16 @@ class TestTSSimulator:
             sample_parameters,
         )
         assert sim._synapses is None
-        assert sim._build_cell_results is None
+        assert sim._built is None
 
         synapses = sim.synapses
         assert synapses is not None
         assert len(synapses) == 3
         assert sim._synapses is synapses
 
-        cell = sim.cell
-        assert cell is not None
-        assert sim._build_cell_results is not None
+        model = sim.model
+        assert model.graph.n_nodes > 0
+        assert sim._built is model
 
     def test_run_is_deterministic_on_repeated_calls(
         self,
@@ -376,14 +370,8 @@ class TestSimulationResultsIntegration:
             "voltage_traces": mock_voltage_traces,
             "input_events": mock_input_events,
             "synapses": {},
-            "gap_junctions": [],
             "record_points": mock_record_points,
-            "cell": None,
-            "morphology": None,
             "segment_tree": MockSegmentTree(),
-            "decor": None,
-            "labels": None,
-            "cvp": None,
         }
 
     def test_integrate_multiple_tags_realistic(self, realistic_results_dict):

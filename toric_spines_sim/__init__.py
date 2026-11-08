@@ -1,10 +1,11 @@
 """
-Arbor simulations of barn-owl toric spines (Sanculi et al., 2020).
+Simulations of barn-owl toric spines (Sanculi et al., 2020) with cable loops
+closed exactly (jaxley, or the scipy reference solver).
 
 Package map
 -----------
 geometry/     SWC I/O, cycle/multi-neck reconnects, sink append, dendrite helpers
-model/        TSModel, synapses, gap junctions, TSRecipe
+model/        TSModel (description + build), synapses and their conductance kinetics
 simulation/   parameter banks, TSSimulator, axon inputs, SimulationResults
 events/       rate curves and event generators
 viz/          Plotly / Dash / animation helpers
@@ -26,21 +27,19 @@ from . import kmatrix  # noqa: F401
 
 # Core classes
 from .model.synapse import SynapsePoint, SynapsePopulation  # noqa: F401
-from .model.gj import GapJunctionPoint  # noqa: F401
-from .model import TSModel, TSRecipe, check_catalogue  # noqa: F401
+from .model import BuiltModel, HHSpec, TSModel  # noqa: F401
 from .simulation import (
     SimulationResults,
     make_default_parameter_bank,
+    make_icx_parameter_bank,
     make_icx_parameter_bank_invitro,
     make_icx_parameter_bank_invivo,
     TSSimulator,
 )  # noqa: F401
 
-# Preparation functions
-from .model.gj import prepare_gap_junctions  # noqa: F401
 from .geometry import (
-    scale_one_radius_in_segment_tree_by_coordinates,
-    scale_radii_in_segment_tree_by_tag,
+    Morphology,
+    SegmentTable,
     compute_geodesic_distances,
     classify_compartments,
     map_probes_to_nodes,
@@ -81,20 +80,18 @@ __all__ = [
     # Core classes
     "SynapsePoint",
     "SynapsePopulation",
-    "GapJunctionPoint",
+    "BuiltModel",
+    "HHSpec",
     "TSModel",
-    "TSRecipe",
-    "check_catalogue",
     "SimulationResults",
     "make_default_parameter_bank",
+    "make_icx_parameter_bank",
     "make_icx_parameter_bank_invitro",
     "make_icx_parameter_bank_invivo",
     "TSSimulator",
-    # Preparation functions
-    "prepare_gap_junctions",
     # Geometry utilities
-    "scale_one_radius_in_segment_tree_by_coordinates",
-    "scale_radii_in_segment_tree_by_tag",
+    "Morphology",
+    "SegmentTable",
     "compute_geodesic_distances",
     "classify_compartments",
     "map_probes_to_nodes",

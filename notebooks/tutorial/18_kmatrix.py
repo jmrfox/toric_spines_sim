@@ -24,7 +24,7 @@
 #
 # on baseline-subtracted **sink** voltage. $k < 0$ means sublinear summation.
 #
-# Needs the NMODL catalogue (`mechanisms`). `T_ms` and `seeds` stay small
+# `T_ms` and `seeds` stay small
 # here; full rate-grid sweeps belong in `simulations/ts{id}/`.
 
 # %%
@@ -35,7 +35,6 @@ from toric_spines_sim.kmatrix import (
     simulation,
     solve_k_linreg,
 )
-from toric_spines_sim.model import check_catalogue
 from toric_spines_sim.paths import (
     get_pointset_path,
     get_swc_path,
@@ -45,7 +44,6 @@ from toric_spines_sim.utils import load_xyz_points
 from toric_spines_sim.viz import RasterPlotter, TimeSeriesPlotter, VizConfig
 from toric_spines_sim.viz import plot_morphology_frusta_3d
 
-check_catalogue()
 
 # Full outer-product k-matrix (many simulations). Leave False for a short demo.
 RUN_K_GRID = False

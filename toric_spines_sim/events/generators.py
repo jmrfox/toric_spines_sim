@@ -36,7 +36,7 @@ class DeterministicEventGenerator(EventGenerator):
         delay_ms: Time before events start (ms). Default: 0.0.
         labels: Optional labels for each output channel. Length must equal
             ``sum(n_synapses_per_axon)``. Default labels are ``A{a}S{s}``.
-            ``TSRecipe`` / ``TSSimulator`` ignore those labels and map by
+            ``TSSimulator`` ignore those labels and map by
             TsGroup **index** to ``syn_0``, ``syn_1``, … — use
             ``remap_axon_channel_events_to_synapses`` when axon assignments
             are not point-file order.
@@ -208,7 +208,7 @@ class StochasticEventGenerator(EventGenerator):
         seed: Random seed for reproducibility. Default: None.
         labels: Optional labels for each output channel. Length must equal
             ``sum(n_synapses_per_axon)``. Default labels are ``A{a}S{s}``.
-            ``TSRecipe`` / ``TSSimulator`` map by TsGroup **index** to
+            ``TSSimulator`` map by TsGroup **index** to
             ``syn_i``; use ``remap_axon_channel_events_to_synapses`` when
             axon assignments are not point-file order.
         routing_weights: Probability of routing each master event to each axon.

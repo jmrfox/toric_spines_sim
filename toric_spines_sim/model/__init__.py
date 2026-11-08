@@ -1,17 +1,14 @@
-"""Cell morphology and recipe definitions for toric spine models."""
+"""Model description (morphology, synapses, record points) for toric spine simulations."""
 
-from .model import TSModel, CUSTOM_CATALOGUE_PATH, check_catalogue
-from .recipe import TSRecipe
-from .gj import GapJunctionPoint, prepare_gap_junctions
+from .model import BuiltModel, HHSpec, TSModel, hh_spec_from_parameters, lumped_sink_membrane
 from .synapse import SynapsePoint, SynapsePopulation
 
 __all__ = [
+    "BuiltModel",
+    "HHSpec",
     "TSModel",
-    "CUSTOM_CATALOGUE_PATH",
-    "check_catalogue",
-    "TSRecipe",
-    "GapJunctionPoint",
-    "prepare_gap_junctions",
+    "hh_spec_from_parameters",
+    "lumped_sink_membrane",
     "SynapsePoint",
     "SynapsePopulation",
 ]
