@@ -15,7 +15,7 @@ uv run jupytext --sync notebooks/tutorial/*.py
 By default they load precomputed data files from `data/`. Set `RECOMPUTE = True` if you want to re-run the calculation; output then goes to `notebooks/tutorial/_artifacts/` so `data/` is not overwritten.
 Expensive pymcfs / mascaf / sink cells default to `RECOMPUTE = False`. Optional all-spine galleries stay behind `SHOW_ALL = False`.sh`). 
 
-IMOD reconstruction and CGALLab are not in this series — see [From IMOD to mesh](../../docs/reconstruction.md) and [Skeletons](../../docs/skeletons.md). The old raw Arbor primer moved to `scripts/arbor_evidence/notebooks/arbor_cable_cell.py` (optional `arbor-evidence` group).
+IMOD reconstruction and CGALLab are not in this series — see [From IMOD to mesh](../../docs/reconstruction.md) and [Skeletons](../../docs/skeletons.md). The old raw Arbor primer is on the `arbor-legacy` branch (`notebooks/misc/arbor_cable_cell.py`).
 
 ### Morphology
 

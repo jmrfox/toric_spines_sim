@@ -5,8 +5,7 @@ Primary goal: make it easy to visually verify that model geometry and placements
 :class:`~toric_spines_sim.geometry.morphology.Morphology`. Optional Plotly support is
 included for interactive 3D.
 
-Ported from the Arbor-based ``viz.arbor`` module: the same functions now take this
-package's ``Morphology`` (or an SWC path, a ``SegmentTable``, or anything with a
+The functions take this package's ``Morphology`` (or an SWC path, a ``SegmentTable``, or anything with a
 ``.morphology`` attribute such as ``SimulationResults`` / ``BuiltModel``).
 Locations are ``geometry.morphology.Location`` objects or ``'(location b x)'``
 strings in this module's branch numbering.
@@ -92,7 +91,14 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from pathlib import Path
 
-from toric_spines_sim.geometry import morphology as A  # Arbor-style names: morphology, location, place_pwlin
+from toric_spines_sim.geometry.morphology import (
+    Location,
+    Morphology,
+    MPoint,
+    SegmentTable,
+    location,
+    place_pwlin,
+)
 
 # Optional Plotly import for interactive 3D figures
 try:  # pragma: no cover
@@ -183,13 +189,13 @@ def _apply_viz_config(fig, config: Optional["VizConfig"]) -> None:
 
 def _split_overlay_items(
     morph, items: Sequence[object]
-) -> Tuple[List["A.location"], List[object]]:
+) -> Tuple[List["Location"], List[object]]:
     """Split overlay items into (locations, points).
 
     - Locations: Location instances or '(location b x)' strings.
     - Points: MPoint-like (has x,y,z) or (x,y,z) tuples/lists.
     """
-    locs: List["A.location"] = []
+    locs: List["Location"] = []
     pts: List[object] = []
     for it in items:
         if isinstance(it, str):
@@ -229,7 +235,7 @@ def plot_morphology_3d(
     overlays: Optional[dict[str, Sequence[object]]] = None,
     overlay_styles: Optional[dict[str, dict]] = None,
     backend: str = "auto",
-    isometry: Optional["A.isometry"] = None,
+    isometry: Optional[object] = None,
     line_kwargs: Optional[dict] = None,
     scatter_kwargs: Optional[dict] = None,
     layout_kwargs: Optional[dict] = None,
@@ -341,18 +347,18 @@ def plot_morphology_3d(
     return ax
 
 
-def _as_morphology(obj) -> "A.Morphology":
+def _as_morphology(obj) -> "Morphology":
     """Return a :class:`Morphology` from common inputs.
 
     Accepts a ``Morphology``, an SWC path, a ``SegmentTable``, or any object
     with a ``.morphology`` attribute (``SimulationResults``, ``BuiltModel``).
     """
-    if isinstance(obj, A.Morphology):
+    if isinstance(obj, Morphology):
         return obj
     if isinstance(obj, (str, Path)):
-        return A.Morphology.from_swc(obj)
-    if isinstance(obj, A.SegmentTable):
-        return A.Morphology(obj)
+        return Morphology.from_swc(obj)
+    if isinstance(obj, SegmentTable):
+        return Morphology(obj)
     if getattr(obj, "morphology", None) is not None:
         return _as_morphology(obj.morphology)
     raise TypeError(f"Expected Morphology, SWC path, SegmentTable or object with .morphology; got {type(obj)!r}")
@@ -369,7 +375,7 @@ def _default_backend() -> str:
 
 
 def draw_morphology(
-    morph: "A.morphology",
+    morph: "Morphology",
     ax=None,
     *,
     color: str = COLORS["skeleton"],
@@ -464,7 +470,7 @@ def _orthonormal_frame_from_axis(dx: float, dy: float, dz: float):
 
 
 def draw_morphology_frusta(
-    morph: "A.morphology",
+    morph: "Morphology",
     ax=None,
     *,
     n_sides: int = 16,
@@ -601,7 +607,7 @@ def plot_morphology_frusta_3d(
     layout_kwargs: Optional[dict] = None,
     radius_scale: float = 1.0,
     caps: bool = False,
-    isometry: Optional["A.isometry"] = None,
+    isometry: Optional[object] = None,
     config: Optional["VizConfig"] = None,
 ):
     """Convenience wrapper: frusta rendering with optional overlays, MPL or Plotly.
@@ -714,25 +720,25 @@ def plot_morphology_frusta_3d(
     return ax
 
 
-def terminals_from_morphology(morph: "A.morphology") -> List["A.location"]:
+def terminals_from_morphology(morph: "Morphology") -> List["Location"]:
     """Return terminal locations (branch-end locations) for the given morphology.
 
     Each terminal is represented as `location(branch_id, x=1.0)` for branches
     with no children.
     """
     morph = _as_morphology(morph)
-    locs: List["A.location"] = []
+    locs: List["Location"] = []
     for b in range(morph.num_branches):
         if not morph.branch_children(b):
-            locs.append(A.location(b, 1.0))
+            locs.append(location(b, 1.0))
     return locs
 
 
 def locations_to_points(
-    morph: "A.morphology",
-    locs: Sequence["A.location"],
-    isometry: Optional["A.isometry"] = None,
-) -> List["A.mpoint"]:
+    morph: "Morphology",
+    locs: Sequence["Location"],
+    isometry: Optional[object] = None,
+) -> List["MPoint"]:
     """Map a sequence of locations to 3D points with place_pwlin.
 
     Parameters
@@ -749,23 +755,23 @@ def locations_to_points(
     """
     morph = _as_morphology(morph)
     pw = (
-        A.place_pwlin(morph, isometry) if isometry is not None else A.place_pwlin(morph)
+        place_pwlin(morph, isometry) if isometry is not None else place_pwlin(morph)
     )
-    pts: List["A.mpoint"] = []
+    pts: List["MPoint"] = []
     for l in locs:
         pts.append(pw.at(l))  # any corresponding 3D point
     return pts
 
 
 def scatter_locations(
-    morph: "A.morphology",
-    locs: Sequence["A.location"],
+    morph: "Morphology",
+    locs: Sequence["Location"],
     ax=None,
     *,
     color: str = COLORS["synapse_point"],
     size: float = 10,
     label: Optional[str] = None,
-    isometry: Optional["A.isometry"] = None,
+    isometry: Optional[object] = None,
 ):
     """Scatter-plot a set of locations on top of a morphology by mapping to 3D points.
 
@@ -820,13 +826,13 @@ def scatter_points(
 
 
 def plot_morph_and_locations(
-    morph: "A.morphology",
-    locs: Sequence["A.location"],
+    morph: "Morphology",
+    locs: Sequence["Location"],
     *,
     ax=None,
     line_kwargs: Optional[dict] = None,
     scatter_kwargs: Optional[dict] = None,
-    isometry: Optional["A.isometry"] = None,
+    isometry: Optional[object] = None,
 ):
     """Draw morphology and overlay a set of locations on a single 3D axes.
 
@@ -862,7 +868,7 @@ def plot_morph_and_locations(
 
 
 def plotly_morphology_traces(
-    morph: "A.morphology",
+    morph: "Morphology",
     *,
     color: str = COLORS["skeleton"],
     width: float = 2,
@@ -900,10 +906,10 @@ def plotly_morphology_traces(
 
 
 def plotly_locations_trace(
-    morph: "A.morphology",
-    locs: Sequence["A.location"],
+    morph: "Morphology",
+    locs: Sequence["Location"],
     *,
-    isometry: Optional["A.isometry"] = None,
+    isometry: Optional[object] = None,
     color: str = COLORS["synapse_point"],
     size: float = 3,
     name: str = "locations",
@@ -963,7 +969,7 @@ def plotly_points_trace(
 
 
 def plotly_morphology_frusta_trace(
-    morph: "A.morphology",
+    morph: "Morphology",
     *,
     n_sides: int = 16,
     color: str = COLORS["segment"],
@@ -1080,23 +1086,23 @@ def parse_location_expr(expr: str) -> Optional[Tuple[int, float]]:
     return int(m.group("branch")), float(m.group("pos"))
 
 
-def locations_from_location_exprs(exprs: Sequence[str]) -> List["A.location"]:
+def locations_from_location_exprs(exprs: Sequence[str]) -> List["Location"]:
     """Convert a sequence of '(location b x)' expressions into locations.
 
     Any expressions that do not match the simple '(location ...)' form are ignored.
     """
-    locs: List["A.location"] = []
+    locs: List["Location"] = []
     for e in exprs:
         parsed = parse_location_expr(e)
         if parsed is None:
             continue
         b, x = parsed
-        locs.append(A.location(b, x))
+        locs.append(location(b, x))
     return locs
 
 
 def plot_cable_cell_with_locations(
-    cell: "A.cable_cell",
+    cell: object,
     *,
     morph_color: str = "k",
     morph_linewidth: float = 1.0,

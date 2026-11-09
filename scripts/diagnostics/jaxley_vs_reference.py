@@ -22,7 +22,7 @@ from toric_spines_sim.utils import load_xyz_points
 def setup(name, dx, kind="ampa"):
     """Built graph with synapses for a spine (or the toric ring from the evidence scripts)."""
     if name == "ring":
-        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "arbor_evidence" / "ring_animation"))
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
         from ring_geometry import write_geometry  # no Arbor needed
 
         tmp = Path(__file__).parent / "_ring_geometry"

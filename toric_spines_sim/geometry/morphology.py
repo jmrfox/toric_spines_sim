@@ -1,19 +1,16 @@
 """Plain-Python morphology: SWC segments, branches and point placement.
 
-Replaces the parts of Arbor the package used for geometry (``load_swc_arbor``,
-``segment_tree``, ``morphology``, ``place_pwlin``, ``location``, ``mpoint``),
-so plotting and analysis no longer need a simulator.
+SWC geometry for plotting and analysis, independent of any simulator.
 
 - :class:`SegmentTable` has one frustum per non-root SWC sample, in file
-  order, from its parent sample to itself (the child's tag), like Arbor's
-  ``load_swc_arbor``. Radius rescaling matches the old
-  ``geometry.rescale`` helpers.
+  order, from its parent sample to itself (the child's tag). Sink and neck
+  radii can be rescaled.
 - :class:`Morphology` groups segments into unbranched branches.
 - :class:`PlacePwlin` maps ``Location(branch, pos)`` to points and finds the
   closest location to a point.
 
-Locations here are this module's own branch numbering; they are not
-interchangeable with Arbor ``(location b x)`` strings from older runs.
+Locations use this module's branch numbering; ``(location b x)`` strings
+from pre-2026-11 (Arbor) runs used a different numbering.
 """
 
 from __future__ import annotations
@@ -34,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class MPoint:
-    """A point with radius (µm), like ``arbor.mpoint``."""
+    """A point with radius (µm)."""
 
     x: float
     y: float
@@ -164,7 +161,7 @@ class SegmentTable:
 
 
 class Morphology:
-    """Segments grouped into unbranched branches (Arbor-like interface)."""
+    """Segments grouped into unbranched branches."""
 
     def __init__(self, table: SegmentTable):
         self.table = table
@@ -273,8 +270,3 @@ def place_pwlin(morph: Morphology, isometry=None) -> PlacePwlin:
         raise NotImplementedError("isometry transforms are not supported")
     return PlacePwlin(morph)
 
-
-# Arbor-style aliases, so plotting code written against ``arbor`` keeps working.
-morphology = Morphology
-mpoint = MPoint
-mnpos = -1

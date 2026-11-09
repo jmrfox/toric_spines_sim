@@ -49,42 +49,6 @@ def equal_vectors(v1: Sequence[float], v2: Sequence[float], tol: float = 1e-6) -
     return bool(np.linalg.norm(v1 - v2) < tol)
 
 
-def join_tags_dsl(tags: Sequence[int]) -> str:
-    """Build an Arbor region DSL expression for the union of multiple tags.
-
-    The DSL ``(join ...)`` operator accepts exactly two arguments, so multiple
-    tags are combined via nested binary joins.
-
-    Parameters
-    ----------
-    tags : Sequence[int]
-        One or more integer region tags.
-
-    Returns
-    -------
-    str
-        An s-expression string, e.g. ``"(join (tag 3) (tag 5))"``.
-
-    Raises
-    ------
-    ValueError
-        If *tags* is empty.
-
-    Examples
-    --------
-    >>> join_tags_dsl([3])
-    '(tag 3)'
-    >>> join_tags_dsl([3, 5, 6])
-    '(join (join (tag 3) (tag 5)) (tag 6))'
-    """
-    if len(tags) == 0:
-        raise ValueError("tags must be non-empty")
-    expr = f"(tag {tags[0]})"
-    for tag in tags[1:]:
-        expr = f"(join {expr} (tag {tag}))"
-    return expr
-
-
 def _iter_nff_s_points(lines: Iterable[str]) -> Iterable[Tuple[float, float, float]]:
     """Yield (x, y, z) for every line that begins with token 's' (case-insensitive).
 

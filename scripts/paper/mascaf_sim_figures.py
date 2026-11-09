@@ -1,7 +1,7 @@
 """MASCAF paper, simulation figures (Figs 11-12) with cable loops closed.
 
 Replaces the Arbor versions, in which loops were not actually closed (see
-``scripts/arbor_evidence``). TS1, ICx in-vitro bank (cm 0.9 µF/cm², lumped
+branch ``arbor-evidence``). TS1, ICx in-vitro bank (cm 0.9 µF/cm², lumped
 sink with the Sanculi whole-cell C and Rin), dt = 0.025 ms, dx = 0.25 µm.
 
 Fig 12: one AMPA synapse at the TS1 site farthest from the neck; peak

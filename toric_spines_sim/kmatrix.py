@@ -113,7 +113,7 @@ def simulation_probe_dict(
 ) -> Dict:
     """Like ``simulation`` but returns the older ``{"probe": samples, ...}`` dict.
 
-    Notebooks that call ``add_time_series_from_arbor(results["probe"])`` can
+    Notebooks that call ``add_time_series_from_samples(results["probe"])`` can
     import this as ``simulation``.
     """
     results = simulation(

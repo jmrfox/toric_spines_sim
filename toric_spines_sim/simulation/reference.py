@@ -307,7 +307,7 @@ class LoopCableModel:
         """Implicit-Euler integration. ``events_ms`` maps synapse index → times.
 
         ``iclamps``: ``(xyz, start_ms, duration_ms, amplitude_nA)`` boxes
-        (positive = depolarizing, like ``arbor.i_clamp``).
+        (positive = depolarizing).
 
         The matrix is factored once; the time-varying synaptic conductances
         on the few synapse nodes enter through a Woodbury update each step.

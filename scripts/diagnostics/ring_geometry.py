@@ -1,4 +1,4 @@
-"""Toric-spine-like ring geometry used by the loop-closure animation and tests (no Arbor)."""
+"""Toric-spine-like ring geometry (ring cut at the top, neck, sink) for loop diagnostics."""
 
 import math
 from pathlib import Path

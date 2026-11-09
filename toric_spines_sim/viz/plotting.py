@@ -8,8 +8,8 @@ import pynapple as nap
 from matplotlib.ticker import FormatStrFormatter
 
 
-def arbor_samples_to_arrays(samples: Sequence[Tuple[Iterable[Sequence[float]], Any]]):
-    """Convert Arbor samples to plain arrays.
+def samples_to_arrays(samples: Sequence[Tuple[Iterable[Sequence[float]], Any]]):
+    """Convert ``[(array[t, v], meta), ...]`` samples to plain arrays.
 
     Parameters
     ----------
@@ -174,7 +174,7 @@ class TimeSeriesPlotter:
         #     ax.set_ylim(min(y) - ypadding * y_span, max(y) + ypadding * y_span)
         return line
 
-    def add_time_series_from_arbor(
+    def add_time_series_from_samples(
         self,
         samples: Sequence[Tuple[Iterable[Sequence[float]], Any]],
         *,
@@ -189,7 +189,7 @@ class TimeSeriesPlotter:
         summary_alpha: float = 0.7,
         summary_color: str | None = None,
     ):
-        arrs = arbor_samples_to_arrays(samples)
+        arrs = samples_to_arrays(samples)
         # If multiple arrays are provided, append an index to labels unless provided
         for i, (t, y, meta) in enumerate(arrs):
             lab = (

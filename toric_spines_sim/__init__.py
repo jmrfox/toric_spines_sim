@@ -61,7 +61,6 @@ from .paths import (
 from .utils import (
     load_xyz_points,
     equal_vectors,
-    join_tags_dsl,
     read_nff_s_points,
     read_nff_points_and_write_txt_file,
 )  # noqa: F401
@@ -107,7 +106,6 @@ __all__ = [
     # General utilities
     "load_xyz_points",
     "equal_vectors",
-    "join_tags_dsl",
     "read_nff_s_points",
     "read_nff_points_and_write_txt_file",
 ]

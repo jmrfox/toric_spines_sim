@@ -5,7 +5,7 @@ one or two *components*: a time course that does not depend on voltage
 (single exponential, or a peak-normalized difference of exponentials), a
 reversal potential, and an optional Jahr-Stevens Mg block evaluated from the
 membrane voltage during the solve. The kinetics match the NMODL mechanisms
-the package used with Arbor (now in ``scripts/arbor_evidence/arbor_model/mechanisms``):
+the package used with Arbor (kept on the ``arbor-evidence`` branch):
 
 - ``ampasyn`` / ``gabaasyn``: g = gmax * sum_k exp(-(t - t_k)/tau)
 - ``nmdasyn``: peak-normalized exp2 with Mg block

@@ -28,8 +28,7 @@
 # - Hodgkin-Huxley channels (same rates as the old `hhnotemp`) run in jaxley on
 #   the frusta tagged `hh_tags`, scaled by `hh_scale`.
 #
-# The old NMODL sources stay in `scripts/arbor_evidence/arbor_model/mechanisms`
-# for the Arbor evidence scripts only.
+# The old NMODL sources are kept on the `arbor-evidence` and `arbor-legacy` branches.
 
 # %%
 import matplotlib.pyplot as plt

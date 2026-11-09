@@ -55,8 +55,3 @@ docs = [
     "mkdocs-material>=9.6",
     "mkdocstrings[python]>=0.30",
 ]
-# Frozen Arbor model + evidence scripts (scripts/arbor_evidence): why Arbor's
-# gap junctions cannot close cable loops. Not needed for simulations.
-arbor-evidence = [
-    "arbor>=0.11.0",
-]

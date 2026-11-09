@@ -81,7 +81,7 @@ MASCAF stores each mesh loop as a tree plus `# CYCLE_BREAK` (and `# MULTI_NECK`)
 
 They agree to ~1e-5 mV on passive models (`tests/test_reference.py`, `tests/test_jaxley_backend.py`), and both reproduce the frozen Arbor baselines on loop-free spines, including HH spikes to the time step (`tests/test_golden.py`). Cutting the loops instead (a tree) overestimates TS1 EPSPs by up to ~2x.
 
-Why not Arbor: Arbor needs a tree, and its gap junctions compute the current from the peer voltage at the start of each step. For a junction strong enough to stand in for cable, that acts like an extra capacitance of `g·dt` on each side (50 pF at 1 µS and dt = 0.025 ms, against ~0.2 pF of spine membrane), so the response collapses and depends on dt. Evidence and a frozen copy of the Arbor model: `scripts/arbor_evidence/` (`uv sync --group arbor-evidence`).
+Why not Arbor: Arbor needs a tree, and its gap junctions compute the current from the peer voltage at the start of each step. For a junction strong enough to stand in for cable, that acts like an extra capacitance of `g·dt` on each side (50 pF at 1 µS and dt = 0.025 ms, against ~0.2 pF of spine membrane), so the response collapses and depends on dt. Evidence and a frozen copy of the Arbor model: branch `arbor-evidence`; the last Arbor version of the package: branch `arbor-legacy`.
 
 jaxley notes: the backend enables float64 (float32 invents a conductance to ground with the tiny branch-point loads), simulates voltages relative to rest, and refuses jaxley's tree-only `jaxley.dhs` solver for looped cells. jax's sparse solver has no `vmap` rule, so `run_batch` on looped cells runs sequentially inside one compiled call.
 

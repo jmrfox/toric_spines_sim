@@ -23,4 +23,4 @@ uv run pytest
 
 Run from the repository root. Tests: `uv run pytest`. Full axon PDF study: `uv run python -m simulations.ts1.axons`.
 
-Simulations use the scipy reference solver for passive models and jaxley 0.14 when Hodgkin-Huxley channels are on; both solve the cable graph with every `# CYCLE_BREAK` loop closed. The project used Arbor until November 2026; Arbor's gap junctions cannot reproduce a cable joint, and the evidence (with a frozen copy of the Arbor model) is in `scripts/arbor_evidence/` (`uv sync --group arbor-evidence`).
+Simulations use the scipy reference solver for passive models and jaxley 0.14 when Hodgkin-Huxley channels are on; both solve the cable graph with every `# CYCLE_BREAK` loop closed. The project used Arbor until November 2026; Arbor's gap junctions cannot reproduce a cable joint, and the evidence and a frozen Arbor model are on the `arbor-evidence` branch, and the last Arbor version of the package is on `arbor-legacy`.

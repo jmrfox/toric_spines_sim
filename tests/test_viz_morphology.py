@@ -49,9 +49,3 @@ def test_frusta_plotly_trace_and_results_object():
 
     ax = viz.plot_cable_cell_with_locations(R(), overlays={"syn": ["(location 1 0.25)"]})
     assert ax is not None
-
-
-def test_deprecated_alias_module():
-    from toric_spines_sim.viz import arbor as old
-
-    assert old.plot_morphology_3d is viz.plot_morphology_3d

@@ -8,7 +8,7 @@ Use `toric_spines_sim.paths` instead of `../../data/...` (see [Path helpers](pac
 toric_spines_sim/
   data/                 morphologies and pointsets used by sims
   notebooks/            tutorial walkthrough + misc demos
-  scripts/              CLI for mesh → SWC → sink; diagnostics; arbor_evidence/
+  scripts/              CLI for mesh → SWC → sink; diagnostics/; paper/
   simulations/          per-spine experiments (edit params here)
   toric_spines_sim/     Python package (geometry, model, simulator, viz)
   tests/

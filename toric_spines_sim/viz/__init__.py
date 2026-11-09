@@ -21,7 +21,7 @@ from .morphology import (
     plotly_morphology_frusta_trace,
 )
 from .plotting import (
-    arbor_samples_to_arrays,
+    samples_to_arrays,
     TimeSeriesPlotter,
     HistogramGridPlotter,
     RasterPlotter,
@@ -58,7 +58,7 @@ __all__ = [
     "plotly_locations_trace",
     "plotly_points_trace",
     "plotly_morphology_frusta_trace",
-    "arbor_samples_to_arrays",
+    "samples_to_arrays",
     "TimeSeriesPlotter",
     "HistogramGridPlotter",
     "RasterPlotter",
