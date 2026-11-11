@@ -29,8 +29,8 @@
 # Full axon PDF / Dash studies:
 #
 # ```bash
-# uv run python -m simulations.ts1.axons
-# uv run python -m simulations.ts1.axons_dash
+# uv run python -m simulations.axons TS1
+# uv run python -m simulations.axons_dash TS1
 # ```
 
 # %%

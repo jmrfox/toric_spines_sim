@@ -58,4 +58,4 @@ IMOD reconstruction and CGALLab are not in this series — see [From IMOD to mes
 | `20_geodesics_and_compartments` | Graph distances and compartment labels |
 | `21_spiny_dendrite` | Synthetic classical-spine comparison morphology |
 
-Extra demos stay under `notebooks/misc/` (including an earlier spiny-dendrite notebook and custom event groups). Full axon PDF study: `uv run python -m simulations.ts1.axons`.
+Extra demos stay under `notebooks/misc/` (including an earlier spiny-dendrite notebook and custom event groups). Full axon PDF study: `uv run python -m simulations.axons TS1`.

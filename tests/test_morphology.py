@@ -102,3 +102,17 @@ def test_at_endpoints(spine_sink):
     a, b = place.at(Location(0, 0.0)), place.at(Location(0, 1.0))
     assert (a.x, b.x) == (0.0, 4.0)
     assert place.at(Location(0, 0.5)).x == pytest.approx(2.0)
+
+
+def test_all_record_points_align_with_segment_table(tmp_path):
+    """probe_seg_k is SegmentTable.segments[k] even when SWC ids are not in file order."""
+    from toric_spines_sim.geometry.swc import get_center_coordinates_for_all_segments
+
+    p = tmp_path / "shuffled.swc"
+    # ids out of order: sample 5 listed before 3
+    p.write_text("1 3 0 0 0 1 -1\n2 3 1 0 0 1 1\n5 3 1 2 0 1 2\n3 3 2 0 0 1 2\n")
+    rec = get_center_coordinates_for_all_segments(p)
+    segs = SegmentTable.from_swc(p).segments
+    assert list(rec) == [f"probe_seg_{k}" for k in range(len(segs))]
+    for k, s in enumerate(segs):
+        assert np.allclose(rec[f"probe_seg_{k}"], s.center)

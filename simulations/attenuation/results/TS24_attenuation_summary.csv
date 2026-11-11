@@ -1,0 +1,2 @@
+spine,loops,stimulus,stimulus_x,stimulus_y,stimulus_z,stimulus_to_neck_um,gmax_nS,peak_synapse_closed_mV,peak_synapse_cut_mV,peak_neck_closed_mV,peak_neck_cut_mV,jaxley_max_diff_mV,neck_transfer_closed,neck_transfer_cut,cut_overestimate_at_synapse
+TS24,2,farthest spine point,14.8475,36.3707,38.3015,8.27023,5,10.9869,11.8648,2.56138,2.53957,1.38937e-05,0.233129,0.214042,0.0799015

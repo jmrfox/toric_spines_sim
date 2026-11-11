@@ -172,72 +172,24 @@ def get_center_coordinates_for_all_segments(
     swc_filepath: Union[str, Path],
     use_radius_weighting: bool = False,
 ) -> Dict[str, Tuple[float, float, float]]:
-    """Compute the center coordinate of each SWC segment (parent→child edge).
+    """Centre of each SWC segment (parent→child frustum), keyed ``probe_seg_k``.
 
-    Returns a dict mapping probe labels like 'probe_seg_0' to (x, y, z) centers.
+    ``k`` is the segment index in :class:`~toric_spines_sim.geometry.morphology.SegmentTable`
+    order (non-root samples in file order), so ``probe_seg_k`` always refers
+    to ``SegmentTable.segments[k]``. With ``use_radius_weighting`` the centre
+    is weighted by squared radius toward the thicker end.
     """
-    swc_filepath = Path(swc_filepath)
-    logger.debug(
-        "Preparing record points for all segments from %s (radius_weighting=%s)",
-        swc_filepath,
-        use_radius_weighting,
-    )
-    swc_model = SWCModel.from_swc_file(str(swc_filepath), validate_reconnections=False)
-    node_ids = sorted(swc_model.nodes())
-    if not node_ids:
-        logger.warning("SWCModel has no nodes for %s", swc_filepath)
-        return {}
+    from toric_spines_sim.geometry.morphology import SegmentTable
 
-    logger.debug("Loaded SWCModel with %d nodes from %s", len(node_ids), swc_filepath)
-
+    table = SegmentTable.from_swc(Path(swc_filepath))
     record_points: Dict[str, Tuple[float, float, float]] = {}
-    segment_index = 0
-    skipped_root = 0
-    for node_id in node_ids:
-        parent_id = swc_model.parent_of(node_id)
-        if parent_id is None:
-            skipped_root += 1
-            continue
-
-        x0, y0, z0 = swc_model.get_node_xyz(parent_id)
-        x1, y1, z1 = swc_model.get_node_xyz(node_id)
-
-        if use_radius_weighting:
-            r0 = swc_model.get_node_radius(parent_id)
-            r1 = swc_model.get_node_radius(node_id)
-            w0 = r0 * r0
-            w1 = r1 * r1
-            denom = w0 + w1
-            if denom == 0.0:
-                cx = 0.5 * (x0 + x1)
-                cy = 0.5 * (y0 + y1)
-                cz = 0.5 * (z0 + z1)
-            else:
-                cx = (w0 * x0 + w1 * x1) / denom
-                cy = (w0 * y0 + w1 * y1) / denom
-                cz = (w0 * z0 + w1 * z1) / denom
+    for k, seg in enumerate(table.segments):
+        p, d = seg.prox, seg.dist
+        if use_radius_weighting and (p.radius ** 2 + d.radius ** 2) > 0:
+            w0, w1 = p.radius ** 2, d.radius ** 2
+            c = tuple((w0 * a + w1 * b) / (w0 + w1) for a, b in ((p.x, d.x), (p.y, d.y), (p.z, d.z)))
         else:
-            cx = 0.5 * (x0 + x1)
-            cy = 0.5 * (y0 + y1)
-            cz = 0.5 * (z0 + z1)
-
-        record_points[f"probe_seg_{segment_index}"] = (cx, cy, cz)
-        if segment_index < 5:
-            logger.debug(
-                "probe_seg_%d (node=%s parent=%s) -> (%.6f, %.6f, %.6f)",
-                segment_index,
-                node_id,
-                parent_id,
-                cx,
-                cy,
-                cz,
-            )
-        segment_index += 1
-
-    logger.info(
-        "Prepared %d record points from %s (skipped roots=%d)",
-        len(record_points),
-        swc_filepath,
-        skipped_root,
-    )
+            c = seg.center
+        record_points[f"probe_seg_{k}"] = tuple(float(v) for v in c)
+    logger.info("Prepared %d record points from %s", len(record_points), swc_filepath)
     return record_points

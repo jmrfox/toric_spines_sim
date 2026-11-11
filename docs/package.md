@@ -8,6 +8,7 @@ The library lives in `toric_spines_sim/`. Full signatures and docstrings are in 
 - [`events/`](api/events.md) — event generators / rate curves
 - [`viz/`](api/viz.md) — Plotly / Dash / animation helpers
 - [`kmatrix.py`](api/kmatrix.md), [`report.py`](api/report.md) — pairwise integration analysis / PDF reporting
+- `attenuation.py` — loop attenuation: peak depolarization vs geodesic distance, loops closed vs cut (`python -m simulations.loop_attenuation`)
 - [`paths.py`](api/paths.md) — repo-root data paths (`get_swc_path`, …)
 
 Temperature is Kelvin (Sanculi slices ~296 K; barn owl in vivo ~313 K). Capacitance is µF/cm²; leak is S/cm²; axial resistivity is Ω·cm. See [Software](software.md#biophysics-notes) for ICx in-vitro / in-vivo banks.

@@ -26,7 +26,7 @@ Use **[WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)** with Ubunt
 
 Work through `notebooks/tutorial/` in order (`01_meshes` … `21_spiny_dendrite`). Pair `.py` sources with notebooks via jupytext (`uv run jupytext --sync notebooks/tutorial/*.py`). `13_mechanisms` and `14_tsmodel_and_solvers` explain the synapse kinetics, the cable graph with closed loops, and the two solvers. Extra demos live under `notebooks/misc/`. All-spine morphology galleries use `SHOW_ALL = True` in the morphology notebooks.
 
-Full axon PDF study: `uv run python -m simulations.ts1.axons` (or `ts2`, `ts3`, …). See [Simulations](simulations.md). Tests: `uv run pytest`.
+Full axon PDF study: `uv run python -m simulations.axons TS1` (or `TS3`, …, or `all`). See [Simulations](simulations.md). Tests: `uv run pytest`.
 
 Mesh skeletonization / SWC fitting use pymcfs and mascaf (installed with `uv sync`; see [Morphology pipeline](morphology.md)).
 
@@ -45,7 +45,7 @@ Run scripts and modules from the **repository root**:
 
 ```bash
 uv run python scripts/append_sink.py TS1
-uv run python -m simulations.ts1.axons
+uv run python -m simulations.axons TS1
 uv run jupyter lab
 ```
 

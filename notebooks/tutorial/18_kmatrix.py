@@ -25,7 +25,7 @@
 # on baseline-subtracted **sink** voltage. $k < 0$ means sublinear summation.
 #
 # `T_ms` and `seeds` stay small
-# here; full rate-grid sweeps belong in `simulations/ts{id}/`.
+# here; full rate-grid sweeps belong in `simulations/`.
 
 # %%
 from toric_spines_sim.geometry import sink_endpoint_location_from_swc_file

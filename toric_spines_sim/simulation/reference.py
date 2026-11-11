@@ -48,6 +48,8 @@ from toric_spines_sim.model.synaptic import Component, exp2_peak_factor  # noqa:
 logger = logging.getLogger(__name__)
 
 XYZ = Tuple[float, float, float]
+#: Synaptic conductances below this (S) are treated as zero in the reference solver.
+G_FLOOR_S = 1e-15
 
 
 @dataclass
@@ -339,25 +341,31 @@ class LoopCableModel:
         v = np.full(n, float(v0_mV))
         out_t = [0.0]
         out_v = [v.copy()]
-        eye = np.eye(len(snodes))
+        # Conductances below G_FLOOR_S are dropped: a decayed synapse then costs
+        # nothing, and the error is far below measurement (1 fS x 70 mV = 0.07 fA).
+        g_series = np.where(g_series > G_FLOOR_S, g_series, 0.0)
+        active_any = g_series.any(axis=0) if keys else np.zeros(n_steps, dtype=bool)
         for k in range(n_steps):
             rhs = c_dt * v + leak_rhs
-            t_mid = (k + 0.5) * dt_ms
-            for node, t0, t1, amp_mA in clamps:  # S*mV = mA
-                if t0 <= t_mid < t1:
-                    rhs[node] += amp_mA
-            gk = g_series[:, k] if keys else None
-            if keys and np.any(gk > 0):
+            if clamps:
+                t_mid = (k + 0.5) * dt_ms
+                for node, t0, t1, amp_mA in clamps:  # S*mV = mA
+                    if t0 <= t_mid < t1:
+                        rhs[node] += amp_mA
+            if active_any[k]:
+                gk = g_series[:, k].copy()
                 if blocked.any():
-                    gk = gk.copy()
                     gk[blocked] *= synaptic.mg_block(v[g_node[blocked]], g_mg[blocked])
                 d = np.zeros(len(snodes))
                 np.add.at(d, g_col, gk)
                 np.add.at(rhs, g_node, gk * g_e)
                 y = lu.solve(rhs)
-                # (B + U D U^T)^-1 r = y - Z (I + D M)^-1 D y_S
-                w = np.linalg.solve(eye + d[:, None] * M, d * y[snodes])
-                v = y - Z @ w
+                # (B + U D U^T)^-1 r = y - Z_a (I + D_a M_aa)^-1 D_a y_a, restricted to
+                # the synapse nodes that are active this step (D is zero elsewhere).
+                a = np.flatnonzero(d)
+                da = d[a]
+                w = np.linalg.solve(np.eye(len(a)) + da[:, None] * M[np.ix_(a, a)], da * y[snodes[a]])
+                v = y - Z[:, a] @ w
             else:
                 v = lu.solve(rhs)
             if (k + 1) % record_every == 0:

@@ -32,9 +32,10 @@
 # `toric_spines_sim.simulation.make_default_parameter_bank()`.
 # You can either use this, or copy that code to make your own bank.
 #
-# Per-spine axon studies return `make_icx_parameter_bank_invivo()` from
-# `simulations/ts{id}/params.py`. Uncomment another factory or set `.value`
-# there if you want a per-spine change. This notebook uses the default bank. 
+# Axon studies take their bank from `simulations/common/spines.py`
+# (`default_parameter_bank()`, the in-vivo ICx bank); pass another factory to
+# `model_config(spine, make_parameter_bank=...)` for a change. This notebook
+# uses the default bank.
 #
 # `TSModel` / `TSSimulator` take a `ParameterSet`. 
 #
@@ -180,15 +181,13 @@ print("invivo   g_pas =", invivo["pas_leak_g_S_per_cm2"], " tau_m_ms =", invivo[
 # %% [markdown]
 # ## Where experiments override
 #
-# Axon studies return the invivo bank from `simulations/ts{id}/params.py`.
-# Uncomment another factory or set `.value` for a per-spine change:
+# Axon studies take the in-vivo bank from `simulations/common/spines.py`.
+# For a different bank, pass a factory:
 #
 # ```python
-# def make_parameter_bank():
-#     # parameter_bank = make_default_parameter_bank()
-#     # parameter_bank = make_icx_parameter_bank_invitro()
-#     parameter_bank = make_icx_parameter_bank_invivo()
-#     return parameter_bank
+# from simulations.common.spines import model_config
+# from toric_spines_sim.simulation import make_icx_parameter_bank
+# cfg = model_config("TS1", make_parameter_bank=lambda: make_icx_parameter_bank("in_vitro"))
 # ```
 #
 # This tutorial series samples `make_default_parameter_bank()` instead.

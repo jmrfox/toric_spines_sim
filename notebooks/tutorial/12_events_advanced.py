@@ -185,7 +185,7 @@ plotter.show()
 #
 # `tssimulator` uses a simpler independent-per-synapse pattern so the
 # construction example stays short. The axon PDF study
-# (`python -m simulations.ts1.axons`) uses this remap path.
+# (`python -m simulations.axons TS1`) uses this remap path.
 
 # %%
 synpts_path = get_pointset_path("TS1_synpts.txt", units="microns")

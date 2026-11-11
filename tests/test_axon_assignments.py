@@ -75,8 +75,9 @@ def test_all_assignment_files_are_known() -> None:
 
 @pytest.mark.parametrize("sim_key", list(AXON_MAP_SPECS))
 def test_model_config_n_axons_matches_file(sim_key: str) -> None:
-    module = __import__(f"simulations.{sim_key}.inputs", fromlist=["MODEL"])
-    model = module.MODEL
+    from simulations.common.spines import model_config
+
+    model = model_config(sim_key)
     spec = AXON_MAP_SPECS[sim_key]
     assert model.spine_id == spec["spine_id"]
     assert model.n_axons() == spec["n_axons"]

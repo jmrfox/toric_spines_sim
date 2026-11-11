@@ -18,8 +18,8 @@
 #
 # To assemble a letter-size PDF of titles, tables, and figures, use
 # `PdfReport` (a thin wrapper around ReportLab): `add_*` methods, then
-# `build()`. Production axon PDFs live in `simulations/ts{id}/`
-# (`python -m simulations.ts1.axons`). This notebook writes a short example
+# `build()`. Production axon PDFs land in `simulations/ts{id}/axons/results/`
+# (`python -m simulations.axons TS1`). This notebook writes a short example
 # under `_artifacts/` and does not run a simulation.
 
 # %%

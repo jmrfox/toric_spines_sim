@@ -21,6 +21,6 @@ uv run pytest
 
 `uv sync` installs jaxley and the GitHub packages `swctools`, `jscip`, `pymcfs`, and `mascaf`. The TS1 neurosignature pipeline is optional: `uv sync --group neurosignature`.
 
-Run from the repository root. Tests: `uv run pytest`. Full axon PDF study: `uv run python -m simulations.ts1.axons`.
+Run from the repository root. Tests: `uv run pytest`. Full axon PDF study: `uv run python -m simulations.axons TS1`. Loop attenuation for every spine: `uv run python -m simulations.loop_attenuation`.
 
 Simulations use the scipy reference solver for passive models and jaxley 0.14 when Hodgkin-Huxley channels are on; both solve the cable graph with every `# CYCLE_BREAK` loop closed. The project used Arbor until November 2026; Arbor's gap junctions cannot reproduce a cable joint, and the evidence and a frozen Arbor model are on the `arbor-evidence` branch, and the last Arbor version of the package is on `arbor-legacy`.

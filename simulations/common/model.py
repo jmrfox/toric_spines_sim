@@ -30,7 +30,7 @@ def default_calculations() -> dict[str, bool]:
 class ModelConfig:
     """Paths, parameter bank, and analysis options for one spine model.
 
-    Users typically construct this in a per-model ``inputs.py``. Report
+    Built by ``simulations.common.spines.model_config``. Report
     defaults match the original TS1 axon study; override fields there.
     """
 

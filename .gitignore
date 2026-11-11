@@ -246,3 +246,5 @@ simulations/**/dash_cache/
 TODO.md
 .temp
 archive/
+# large interactive exports
+simulations/**/*_viz.html

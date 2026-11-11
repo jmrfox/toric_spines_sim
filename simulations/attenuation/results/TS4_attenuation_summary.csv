@@ -1,0 +1,2 @@
+spine,loops,stimulus,stimulus_x,stimulus_y,stimulus_z,stimulus_to_neck_um,gmax_nS,peak_synapse_closed_mV,peak_synapse_cut_mV,peak_neck_closed_mV,peak_neck_cut_mV,jaxley_max_diff_mV,neck_transfer_closed,neck_transfer_cut,cut_overestimate_at_synapse
+TS4,1,synapse 20,50.2377,29.1902,15.2142,14.134,5,17.1472,17.2529,2.47765,2.47456,1.64221e-05,0.144493,0.143429,0.00616239

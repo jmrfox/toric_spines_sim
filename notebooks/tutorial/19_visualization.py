@@ -23,7 +23,7 @@
 # dashboard need a `SimulationResults` from `tssimulator` /
 # `simulation_results` (`RUN_PLAYBACK = False` unless building frames).
 #
-# Production Dash: `uv run python -m simulations.ts1.axons_dash`.
+# Production Dash: `uv run python -m simulations.axons_dash TS1`.
 # Parameter-sweep browser: `create_hypergrid_dash_app(data_dir)` on a
 # hypergrid archive (see `docs/simulations.md`).
 

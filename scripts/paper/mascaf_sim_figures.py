@@ -30,11 +30,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: E402
-from scipy.sparse import csr_matrix  # noqa: E402
-from scipy.sparse.csgraph import dijkstra  # noqa: E402
 
-from toric_spines_sim.geometry.sink import neck_point_from_swc_file  # noqa: E402
 from toric_spines_sim.paths import get_pointset_path, get_simulation_path, get_swc_path  # noqa: E402
 from toric_spines_sim.simulation import TSSimulator, make_icx_parameter_bank  # noqa: E402
 from toric_spines_sim.utils import load_xyz_points  # noqa: E402
@@ -59,67 +57,32 @@ def parameters():
     return p
 
 
-def geodesic_from(graph, node):
-    coo = graph.G_axial.tocoo()
-    keep = coo.row != coo.col
-    lens = np.linalg.norm(graph.node_xyz[coo.row[keep]] - graph.node_xyz[coo.col[keep]], axis=1)
-    g = csr_matrix((lens, (coo.row[keep], coo.col[keep])), shape=graph.G_axial.shape)
-    return dijkstra(g, indices=node)
-
-
 def fig12():
-    p = parameters()
-    pts = np.array(load_xyz_points(SYNPTS))
-    neck = np.array(neck_point_from_swc_file(SWC))
-    syn = int(np.argmax(np.linalg.norm(pts - neck, axis=1)))
-    events = {f"syn_{i}": ([5.0] if i == syn else []) for i in range(len(pts))}
-    runs = {
-        "jaxley": TSSimulator(SWC, SYNPTS, events, p, solver="jaxley").run(),
-        "reference": TSSimulator(SWC, SYNPTS, events, p, solver="reference").run(),
-        "tree": TSSimulator(SWC, SYNPTS, events, p, solver="reference", restore_loops=False).run(),
-    }
-    rest = p["Vrest_mV"]
-    cols = list(runs["jaxley"].voltage_traces.columns)
-    loop_sim = TSSimulator(SWC, SYNPTS, events, p, solver="reference")
-    graph = loop_sim.graph
-    dist = geodesic_from(graph, graph.closest_node(tuple(pts[syn])))
-    rp = runs["jaxley"].record_points
-    d = np.array([dist[graph.closest_node(rp[c])] for c in cols])
-    seg_tags = [s.tag for s in loop_sim.segment_tree.segments]
-    tags = np.array([seg_tags[int(c.split("_")[-1])] for c in cols])
-    peaks = {k: r.voltage_traces[cols].values.max(axis=0) - rest for k, r in runs.items()}
-    cross = float(np.abs(runs["jaxley"].voltage_traces.values - runs["reference"].voltage_traces.values).max())
+    """Fig 12 via ``toric_spines_sim.attenuation`` (same defaults), poster-compatible CSV."""
+    from toric_spines_sim.attenuation import loop_attenuation, plot_loop_attenuation
 
+    res = loop_attenuation("TS1", gmax_uS=GMAX_US, T_ms=T_MS, dt_ms=DT_MS, dx_um=DX_UM, cross_check=True)
     OUT.mkdir(parents=True, exist_ok=True)
-    with open(OUT / "fig12_attenuation.csv", "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["probe", "tag", "geodesic_um", "peak_closed_mV", "peak_reference_mV", "peak_tree_mV"])
-        for i, c in enumerate(cols):
-            w.writerow([c, int(tags[i]), f"{d[i]:.3f}", f"{peaks['jaxley'][i]:.4f}",
-                        f"{peaks['reference'][i]:.4f}", f"{peaks['tree'][i]:.4f}"])
-
+    t = res.table
+    # Column names the SfN poster script reads (closed = jaxley, reference = scipy, tree = cut).
+    pd.DataFrame({
+        "probe": t["probe"], "tag": t["tag"], "geodesic_um": t["geodesic_um"].round(3),
+        "peak_closed_mV": t["peak_jaxley_mV"].round(4), "peak_reference_mV": t["peak_closed_mV"].round(4),
+        "peak_tree_mV": t["peak_cut_mV"].round(4),
+    }).to_csv(OUT / "fig12_attenuation.csv", index=False)
     fig, ax = plt.subplots(figsize=(6.4, 4.2))
-    spine = tags == 3
-    ax.scatter(d[spine], peaks["tree"][spine] + rest, s=14, facecolors="none", edgecolors="0.6",
-               label="loops cut (tree)")
-    ax.scatter(d[spine], peaks["jaxley"][spine] + rest, s=16, color="#1f5fbf", label="loops closed")
-    ax.scatter(d[~spine], peaks["jaxley"][~spine] + rest, s=16, color="#c4501a", marker="s",
-               label="sink (loops closed)")
-    ax.set_xlabel("Geodesic distance from synapse (µm)")
-    ax.set_ylabel("Peak membrane potential (mV)")
-    ax.set_title("Voltage attenuation along TS1")
-    ax.legend(frameon=False)
-    ax.grid(alpha=0.3)
+    plot_loop_attenuation(res, ax=ax, title="Voltage attenuation along TS1")
     fig.tight_layout()
     fig.savefig(OUT / "fig12_attenuation.png", dpi=200)
     plt.close(fig)
+    s = res.summary
     return {
-        "synapse": syn,
-        "peak_at_synapse_closed_mV": float(peaks["jaxley"][spine].max()),
-        "peak_at_synapse_tree_mV": float(peaks["tree"][spine].max()),
-        "neck_region_closed_mV": float(peaks["jaxley"][spine][d[spine] > d[spine].max() - 1].mean()),
-        "jaxley_vs_reference_max_diff_mV": cross,
-        "loops": graph.n_loops,
+        "synapse": s["stimulus"],
+        "peak_at_synapse_closed_mV": s["peak_synapse_closed_mV"],
+        "peak_at_synapse_tree_mV": s["peak_synapse_cut_mV"],
+        "neck_closed_mV": s["peak_neck_closed_mV"],
+        "jaxley_vs_reference_max_diff_mV": s["jaxley_max_diff_mV"],
+        "loops": s["loops"],
     }
 
 
